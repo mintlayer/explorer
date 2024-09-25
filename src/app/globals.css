@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 241, 243, 243;
+
+  --secondary-100: rgba(216, 231, 229, 1);
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background-color: rgb(var(--background-rgb));
+}
+
+@keyframes opacityLoop {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@layer components {
+  .remark p {
+    @apply text-sm text-gray-700 my-2;
+  }
+  .remark blockquote p {
+    @apply text-base text-primary-100  my-2;
+  }
+  .remark h4 {
+    @apply text-xl text-gray-700 font-bold my-2;
+  }
+  .remark li {
+    @apply my-4;
+  }
+  .remark strong {
+    @apply text-base text-gray-700 font-bold my-2;
+  }
+  .remark code {
+    background-color: rgba(12, 39, 34, 1);
+    color: white;
+    @apply text-sm font-bold w-full;
+  }
+  .remark pre {
+    background-color: rgba(12, 39, 34, 1);
+    color: white;
+    border-radius: 5px;
+    @apply text-sm font-bold p-2 -mb-2 w-full overflow-x-scroll;
+  }
+
+  .word-wrap-break-word {
+    word-wrap: break-word;
+  }
+}

@@ -1,0 +1,46 @@
+.top {
+  @apply bg-white;
+}
+
+.title {
+  @apply font-bold text-2xl py-4 mx-4;
+}
+
+.data {
+}
+
+.table {
+  @apply w-full;
+}
+
+.table thead {
+  @apply bg-secondary-100;
+}
+
+.table thead th {
+  @apply font-normal;
+}
+
+.table tbody tr {
+  @apply border-b border-secondary-100;
+}
+
+.table tbody tr:last-child {
+  @apply border-b-0;
+}
+
+.table tbody tr td {
+  @apply px-4 py-2;
+}
+
+.col_rank {
+  @apply text-center w-1.5 px-4;
+}
+
+.col_address {
+  @apply text-left px-4;
+}
+
+.col_amount {
+  @apply text-right px-4;
+}
