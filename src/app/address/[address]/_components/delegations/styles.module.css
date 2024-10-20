@@ -1,0 +1,79 @@
+/* .wallet {
+  @apply bg-white px-4 py-4 h-full;
+  clip-path: polygon(0% 0%, 92% 0%, 100% 30px, 100% 100%, 0 100%);
+} */
+
+/* .title {
+  @apply font-bold text-2xl my-4 mx-4;
+} */
+
+/* .data {
+  @apply flex flex-col gap-4;
+} */
+
+/* .table {
+  @apply w-full;
+} */
+
+/* .table thead {
+  @apply bg-secondary-100 font-normal;
+} */
+
+/* .table thead th {
+  @apply text-left font-normal;
+} */
+
+.table .col_vesting {
+  @apply text-right;
+}
+
+/* .table th,
+.table td {
+  @apply px-4 py-2;
+} */
+
+/* .table tr {
+  @apply border-b border-secondary-100;
+} */
+
+/* .col_amount {
+  font-weight: 500;
+  text-align: right;
+} */
+
+/* .table tr:last-child {
+  @apply border-b-0;
+} */
+
+.expand_line td {
+  @apply bg-primary-100;
+}
+
+.expand_header td,
+.expand_row {
+  font-size: 12px;
+}
+
+.expand_row td {
+  @apply border-b border-white;
+}
+
+.badge {
+  @apply inline-block px-2 py-1 rounded-full text-xs font-bold bg-secondary-100 text-primary-110;
+}
+
+/* .token_link {
+  @apply text-primary-110 font-bold;
+} */
+
+/* .col_asset {
+  @apply text-base-gray font-bold;
+} */
+
+.expand_header {
+  @apply bg-secondary-100;
+}
+
+.expand_row {
+  @apply bg-secondary-100;
+}

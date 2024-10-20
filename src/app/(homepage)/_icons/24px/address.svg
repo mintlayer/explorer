@@ -1,0 +1,10 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Icons / 24px/Address">
+<path id="Path" d="M18 8L18 11L16 11L16 8L18 8Z" fill="#0D7664"/>
+<path id="Path_2" d="M12 8L12 9L5 9L5 8L12 8Z" fill="#0D7664"/>
+<path id="Path_3" d="M12 10L12 11L5 11L5 10L12 10Z" fill="#0D7664"/>
+<path id="Path_4" d="M9 12L9 13L5 13L5 12L9 12Z" fill="#0D7664"/>
+<path id="Path_5" d="M14 7L14 17L13 17L13 7L14 7Z" fill="#0D7664"/>
+<path id="icon/content/mail_24px" fill-rule="evenodd" clip-rule="evenodd" d="M20 4C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4H20ZM4 18H20V6H11.5H4V18Z" fill="#0D7664"/>
+</g>
+</svg>
