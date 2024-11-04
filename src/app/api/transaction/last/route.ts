@@ -35,7 +35,9 @@ export async function GET(request: Request) {
   for (let i = 0; i < transactions.length; i++) {
     const amount = transactions[i]?.outputs?.reduce((acc: any, value: any) => {
       if (value?.type === "Transfer") {
-        return BigInt(value?.value?.amount?.atoms) + acc;
+        if (value?.value?.type === 'Coin') {
+          return BigInt(value?.value?.amount?.atoms) + acc;
+        }
       }
       if (value?.type === "DelegateStaking") {
         return BigInt(value?.amount?.atoms) + acc;
