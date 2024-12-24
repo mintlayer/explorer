@@ -197,18 +197,47 @@ export async function GET(request: Request, { params }: { params: { address: str
       },
     });
     const data_token = await res_token.json();
-    token_info[token_id] = data_token;
+    if(!data_token.error) {
+      token_info[token_id] = data_token;
+    }
+  }
+
+  // get token info for each token
+  const nft_info: any = {};
+  for (const token_id in token_balances) {
+    const res_nft = await fetch(NODE_API_URL + "/nft/" + token_id, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const data_nft = await res_nft.json();
+    if(!data_nft.error) {
+      nft_info[token_id] = data_nft;
+    }
   }
 
   const token_wallet_data = Object.keys(token_balances).map((token_id) => {
-    return {
-      coin: token_info[token_id].token_ticker.string,
-      symbol: token_info[token_id].token_ticker.string,
-      type: "Token",
-      amount: token_balances[token_id].amount,
-      amount_locked: 0,
-      token_id: token_id,
-    };
+    if(token_info[token_id]) {
+      return {
+        coin: token_info[token_id].token_ticker.string,
+        symbol: token_info[token_id].token_ticker.string,
+        type: "Token",
+        amount: token_balances[token_id].amount,
+        amount_locked: 0,
+        token_id: token_id,
+      };
+    }
+    if(nft_info[token_id]) {
+      return {
+        coin: nft_info[token_id].ticker.string,
+        symbol: nft_info[token_id].ticker.string,
+        type: "NFT",
+        amount: token_balances[token_id].amount,
+        amount_locked: 0,
+        token_id: token_id,
+      };
+    }
   });
 
   let response: AddressResponse = {};

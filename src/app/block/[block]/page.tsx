@@ -78,8 +78,6 @@ export default async function Block({
   const block = params.block;
   const { data, last, error }: any = await getData(block, transactionsPage, transactionsPerPage);
 
-  console.log("error", error);
-
   if (error === "Invalid block Id") {
     return <NotFound title={"Invalid block Id"} subtitle={"Invalid block Id"} />;
   }
