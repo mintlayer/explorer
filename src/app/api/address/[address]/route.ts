@@ -242,7 +242,19 @@ export async function GET(request: Request, { params }: { params: { address: str
 
   let response: AddressResponse = {};
 
-  const bridgeTreasuryAddresses = ["mtc1q83x75alqe0wptrfrz5jv3a6n3qayzlacy9mnjvj", "mtc1q9d860uag5swe78ac9c2lct9mkctfyftqvwj3ypa"];
+  const bridgeTreasuryAddresses = [
+    "mtc1q83x75alqe0wptrfrz5jv3a6n3qayzlacy9mnjvj",
+    "mtc1q9d860uag5swe78ac9c2lct9mkctfyftqvwj3ypa",
+    "mtc1qy7pwq9qu3ugk27zn34l54z54tel5vnjssnk66y8",
+    "mtc1q93rq4kqem8rme005v38p6v2p6xpgvqc6qrxtuwf",
+    "mtc1q9jl52r05j65wupdsxa53jp9ks9tctc2rynpuacg",
+    "mtc1qy74ylf2p4cpht2pn2cwjz8mp8j80v7n4q9fuk4v",
+    "mtc1qxpngdalz3h0cwrd0y3ydlrpgqgatl8yfv4eprcp",
+    "mtc1q90wa00fffsvfyps7hs3dk97pldsl460hgkj3dnq",
+    "mtc1qxalhy7y3w0mrzkv3gdygkp3tkapyk77aczzgldq",
+    "mtc1q9twmvnfmxxhdd78hfe4ves0d77xthr5fqr4wewu",
+    "mtc1q83a50h2xe0ka2uzljdf0s0auvuewxs5cvnemc3s",
+  ];
 
   if (isMainNetwork && bridgeTreasuryAddresses.includes(params.address)) {
     response.note = "This is Bridge Treasury Wallet Address for tokens transitioning from ERC20 to Mintlayer Mainnet.";
