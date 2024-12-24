@@ -13,6 +13,22 @@ export async function GET(request: Request, { params }: { params: { token: strin
   });
   const data = await res.json();
 
+  if(data.error === 'Token not found') {
+    const res_nft = await fetch(NODE_API_URL + "/nft/" + params.token, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const data_nft = await res_nft.json();
+
+    const response = {
+      ...data_nft,
+      token_ticker: data_nft.ticker,
+    };
+
+    return NextResponse.json(response);
+  }
+
   const res_stats = await fetch(NODE_API_URL + "/statistics/token/" + params.token, {
     headers: {
       "Content-Type": "application/json",
