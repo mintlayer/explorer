@@ -24,10 +24,61 @@ import { Modal } from "@/app/_components/modal";
 
 const coin = getCoin();
 
+const get_annual_reward_delegator =  (block_height: number, pool: any, part: any) => {
+  const rewards = [
+    { start: 0      , end: 262800 , reward: 202 },
+    { start: 262800 , end: 525600 , reward: 151 },
+    { start: 525600 , end: 788400 , reward: 113 },
+    { start: 788400 , end: 1051200, reward: 85 },
+    { start: 1051200, end: 1314000, reward: 64 },
+    { start: 1314000, end: 1576800, reward: 48 },
+    { start: 1576800, end: 1839600, reward: 36 },
+    { start: 1839600, end: 2102400, reward: 27 },
+    { start: 2102400, end: 2365200, reward: 20 },
+    { start: 2365200, end: 2628000, reward: 15 },
+    { start: 2628000, end: Infinity,reward: 0 }
+  ];
+
+  const current = rewards.findIndex((r) => r.start <= block_height && r.end > block_height);
+  const current_reward = (rewards[current]?.reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part;
+  const current_reward_end = rewards[current]?.end || 1_000_000_000_000_000;
+  const future_reward = rewards[current + 1]?.reward ? (rewards[current + 1]?.reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part : 0;
+  const total_blocks_in_year = 720 * 365;
+  const current_reward_part = current_reward * (current_reward_end - block_height);
+  const future_reward_part = future_reward * (total_blocks_in_year - (current_reward_end - block_height));
+  return current_reward_part + future_reward_part;
+}
+
+const get_annual_reward =  (block_height: number) => {
+  const rewards = [
+    { start: 0      , end: 262800 , reward: 202 },
+    { start: 262800 , end: 525600 , reward: 151 },
+    { start: 525600 , end: 788400 , reward: 113 },
+    { start: 788400 , end: 1051200, reward: 85 },
+    { start: 1051200, end: 1314000, reward: 64 },
+    { start: 1314000, end: 1576800, reward: 48 },
+    { start: 1576800, end: 1839600, reward: 36 },
+    { start: 1839600, end: 2102400, reward: 27 },
+    { start: 2102400, end: 2365200, reward: 20 },
+    { start: 2365200, end: 2628000, reward: 15 },
+    { start: 2628000, end: Infinity,reward: 0 }
+  ];
+
+  const current = rewards.findIndex((r) => r.start <= block_height && r.end > block_height);
+  const current_reward = rewards[current]?.reward;
+  const current_reward_end = rewards[current]?.end || 1_000_000_000_000_000;
+  const future_reward = rewards[current + 1]?.reward || 0;
+  const total_blocks_in_year = 720 * 365;
+  const current_reward_part = current_reward * (current_reward_end - block_height);
+  const future_reward_part = future_reward * (total_blocks_in_year - (current_reward_end - block_height));
+  return current_reward_part + future_reward_part;
+}
+
 export function Table() {
   const { detected } = useWallet();
   const [pools, setPools] = useState<any>([]);
   const [orderField, setOrderField] = useState<any>("pool_id");
+  const [blockHeight, setBlockHeight] = useState<any>(0);
   const [order, setOrder] = useState<any>("asc");
   const [page, setPage] = useState<any>(1);
   const [pager, setPager] = useState<any>(true);
@@ -63,6 +114,7 @@ export function Table() {
       const [block] = data;
       const difficulty = block?.target_difficulty;
       setDifficulty(difficulty);
+      setBlockHeight(block.block);
     };
     getDifficulty();
   }, []);
@@ -79,7 +131,7 @@ export function Table() {
   const filterer = (item: any) => {
     if (hideNonProfitPools) {
       if (item.margin_ratio === 1) return false;
-      if (item.cost_per_block === 202) return false;
+      if (item.cost_per_block >= 151) return false;
       return true;
     } else {
       return true;
@@ -113,17 +165,20 @@ export function Table() {
   const injectApy = (stakingAmount: any) => (pool: any) => {
     const probability_per_second = pool.effective_pool_balance * 1e11 * difficulty;
 
-    const reward = 202;
-
     // APY estimation
     const blocks_per_day = probability_per_second * 24 * 60 * 60;
     const part = stakingAmount / (stakingAmount + pool.delegations_amount + pool.staker_balance);
-    const reward_per_block = (reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part;
-    const apy = ((reward_per_block * blocks_per_day * 365) / stakingAmount) * 100; // * 100 to display percent
+    // const reward_per_block = (reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part;
+    const annual_reward_delegator = get_annual_reward_delegator(blockHeight, pool, part);
+    const annual_reward_pool = get_annual_reward(blockHeight);
+    const reward_per_year = annual_reward_delegator;
+
+    // blocks_per_day / 720 is a part of 720 (total blocks in a day)
+    const apy = ((reward_per_year * blocks_per_day / 720) / stakingAmount) * 100; // * 100 to display percent
 
     // other labels
-    const reward_per_day_pool = blocks_per_day * reward;
-    const reward_per_day_delegator = blocks_per_day * reward_per_block;
+    const reward_per_day_pool = blocks_per_day * (annual_reward_pool / (720 * 365));
+    const reward_per_day_delegator = blocks_per_day * (annual_reward_delegator / (720 * 365)); // left for approximate reference
     const part_label = (part * 100).toFixed(2);
     const hours_for_block = (1 / probability_per_second / 3600).toFixed(2);
 
