@@ -41,7 +41,7 @@ export const Wallet = ({ data }: any) => {
                     {item.type === "Coin" ? (
                       <span className={expanded ? `text-white` : `text-primary-100`}>{item.symbol}</span>
                     ) : (
-                      <Link href={`/${item.type === 'NFT' ? 'nft' : ''}${item.type === 'Coin' ? 'token' : ''}/${item.token_id}`} className={expanded ? `text-white` : `text-primary-100`}>
+                      <Link href={`/${item.type === 'NFT' ? 'nft' : ''}${item.type === 'Token' ? 'token' : ''}${item.type === 'Coin' ? 'token' : ''}/${item.token_id}`} className={expanded ? `text-white` : `text-primary-100`}>
                         {item.symbol}
                       </Link>
                     )}
