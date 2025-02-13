@@ -55,7 +55,8 @@ describe("get_annual_subsidy", () => {
     expect(get_annual_subsidy(10)).toEqual(53085090); // 202 * 262790 + 151 * 10
     expect(get_annual_subsidy(262800)).toEqual(39682800); // 151 * 262800
     expect(get_annual_subsidy(262801)).toEqual(39682762); // 151 * 262799 + 113
-    expect(get_annual_subsidy(2628000)).toEqual(15);
+    expect(get_annual_subsidy(2627999)).toEqual(15); // 15
+    expect(get_annual_subsidy(2628000)).toEqual(0); // 0 because 2628000 is the last block and delegator will not get any reward for it
     expect(get_annual_subsidy(2628001)).toEqual(0); // 0
   });
 })
