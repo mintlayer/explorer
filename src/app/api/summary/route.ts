@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 // @ts-ignore
 import cache from "@/app/api/_utils/cache";
-import { total_reward } from "@/utils/reward";
+import { get_total_subsidy } from "@/utils/emission";
 import { getCMCInfo } from "@/utils/exchange";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,11 @@ export async function GET(request: Request) {
   const last_block_data = await last_block.json();
   const { block_height } = last_block_data;
 
-  const exchange_rate = await getCMCInfo();
+  const exchange_rate = await getCMCInfo().catch(() => {
+    return {
+      price: 0,
+    };
+  });
 
   const req_circulating_supply_ml = await fetch("https://api-server.mintlayer.org/api/v2/statistics/coin");
   const circulating_supply_ml = await req_circulating_supply_ml.json();
@@ -66,9 +70,9 @@ export async function GET(request: Request) {
 
   const bridge_balance_erc20 = parseInt(total_supply_erc20) - parseInt(circulating_supply_erc20);
 
-  const block_reward = total_reward(block_height);
+  const block_subsidy = get_total_subsidy(block_height);
 
-  const ml_total_supply = 400_000_000 + block_reward - bridge_balance - circulating_supply_ml.burned.decimal;
+  const ml_total_supply = 400_000_000 + block_subsidy - bridge_balance - circulating_supply_ml.burned.decimal;
   const erc20_total_supply = 400_000_000 - bridge_balance_erc20;
 
   const response = {
@@ -98,7 +102,7 @@ export async function GET(request: Request) {
       total_effective_amount: staking.total_effective_amount,
     },
     block_rewards: {
-      ml: block_reward,
+      ml: block_subsidy,
       height: block_height,
     },
   };

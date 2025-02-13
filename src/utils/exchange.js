@@ -11,6 +11,7 @@ export const getCMCInfo = async () => {
     const quotes = data.data.ML.find(({ name }) => name === "Mintlayer").quote.USD;
     return quotes;
   } catch (error) {
+    throw new Error(error);
     console.error(error);
   }
 };
