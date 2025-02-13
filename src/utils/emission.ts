@@ -40,18 +40,18 @@ export const get_annual_subsidy =  (block_height: number) => {
   const current_subsidy_end = EMISSION_TABLE[current]?.end || Infinity;
   const future_subsidy = EMISSION_TABLE[current + 1]?.reward || 0;
   const total_blocks_in_year = 720 * 365;
-  const current_subsidy_part = current_subsidy * (current_subsidy_end - block_height);
-  const future_subsidy_part = future_subsidy * (total_blocks_in_year - (current_subsidy_end - block_height));
+  const current_subsidy_part = current_subsidy === 0 ? 0 : current_subsidy * (current_subsidy_end - block_height);
+  const future_subsidy_part = future_subsidy === 0 ? 0 : future_subsidy * (total_blocks_in_year - (current_subsidy_end - block_height));
   return current_subsidy_part + future_subsidy_part;
 }
 
 export const get_annual_subsidy_delegator =  (block_height: number, pool: any, part: any) => {
   const current = EMISSION_TABLE.findIndex((r) => r.start <= block_height && r.end > block_height);
-  const current_reward = (EMISSION_TABLE[current]?.reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part;
-  const current_reward_end = EMISSION_TABLE[current]?.end || Infinity;
-  const future_reward = EMISSION_TABLE[current + 1]?.reward ? (EMISSION_TABLE[current + 1]?.reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part : 0;
+  const current_reward = (EMISSION_TABLE[current].reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part;
+  const current_reward_end = EMISSION_TABLE[current].end || Infinity;
+  const future_reward = EMISSION_TABLE[current + 1] && EMISSION_TABLE[current + 1].reward ? (EMISSION_TABLE[current + 1].reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part : 0;
   const total_blocks_in_year = 720 * 365;
-  const current_reward_part = current_reward * (current_reward_end - block_height);
-  const future_reward_part = future_reward * (total_blocks_in_year - (current_reward_end - block_height));
+  const current_reward_part = current_reward === 0 ? 0 : current_reward * (current_reward_end - block_height);
+  const future_reward_part = future_reward === 0 ? 0 : future_reward * (total_blocks_in_year - (current_reward_end - block_height));
   return current_reward_part + future_reward_part;
 }

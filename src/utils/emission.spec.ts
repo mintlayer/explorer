@@ -2,6 +2,7 @@ import {
   block_subsidy_at_height,
   get_total_subsidy,
   get_annual_subsidy,
+  get_annual_subsidy_delegator,
 } from "./emission";
 
 describe("block_subsidy_at_height", () => {
@@ -54,5 +55,31 @@ describe("get_annual_subsidy", () => {
     expect(get_annual_subsidy(10)).toEqual(53085090); // 202 * 262790 + 151 * 10
     expect(get_annual_subsidy(262800)).toEqual(39682800); // 151 * 262800
     expect(get_annual_subsidy(262801)).toEqual(39682762); // 151 * 262799 + 113
+    expect(get_annual_subsidy(2628000)).toEqual(15);
+    expect(get_annual_subsidy(2628001)).toEqual(0); // 0
   });
 })
+
+describe("get_annual_subsidy_delegator", () => {
+  const profitable_pool = {
+    cost_per_block: 0,
+    margin_ratio: 0,
+  };
+  const not_profitable_pool = {
+    cost_per_block: 202,
+    margin_ratio: 1,
+  };
+
+  it("should return the correct annual subsidy for a delegator at a given height", () => {
+    const part = 0.5;
+    expect(get_annual_subsidy_delegator(0, profitable_pool, part)).toEqual(26542800);
+    expect(get_annual_subsidy_delegator(10, profitable_pool, part)).toEqual(26542545);
+    expect(get_annual_subsidy_delegator(2628001, profitable_pool, part)).toEqual(0);
+  });
+
+  it("should return the zero annual subsidy for a delegation to non profitable pool", () => {
+    const part = 0.5;
+    const block_height = 0;
+    expect(get_annual_subsidy_delegator(block_height, not_profitable_pool, part)).toEqual(0);
+  });
+});
