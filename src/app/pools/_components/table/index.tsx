@@ -1,78 +1,24 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Block } from "@/app/(homepage)/_components/block";
-import { Summary } from "@/app/_components/summary";
-import icon_hash from "@/app/(homepage)/_icons/16px/hash.svg";
 import icon_coin from "@/app/(homepage)/_icons/16px/coin.svg";
 import copy_icon from "@/app/(homepage)/_icons/16px/copy.svg";
-import icon_fee from "@/app/(homepage)/_icons/16px/fee.svg";
 import icon_block from "@/app/(homepage)/_icons/16px/block.svg";
 import icon_time from "@/app/(homepage)/_icons/16px/time.svg";
 import check_icon from "@/app/(homepage)/_icons/24px/check.svg";
-import icon_community from "@/app/(homepage)/_icons/16px/community.svg";
 import Link from "next/link";
 import { getCoin } from "@/utils/network";
 import Image from "next/image";
 
-import { Tooltip } from "react-tooltip";
-import { handleAction } from "next/dist/server/app-render/action-handler";
 import { Switch } from "@/app/tx/[tx]/_components/switch";
 import { formatML } from "@/utils/numbers";
 import { useWallet } from "@/hooks/useWallet";
 import { Modal } from "@/app/_components/modal";
 
+import {calculateDelegationInfo} from "@/utils/staking";
+import {block_subsidy_at_height} from "@/utils/emission";
+
 const coin = getCoin();
-
-const get_annual_reward_delegator =  (block_height: number, pool: any, part: any) => {
-  const rewards = [
-    { start: 0      , end: 262800 , reward: 202 },
-    { start: 262800 , end: 525600 , reward: 151 },
-    { start: 525600 , end: 788400 , reward: 113 },
-    { start: 788400 , end: 1051200, reward: 85 },
-    { start: 1051200, end: 1314000, reward: 64 },
-    { start: 1314000, end: 1576800, reward: 48 },
-    { start: 1576800, end: 1839600, reward: 36 },
-    { start: 1839600, end: 2102400, reward: 27 },
-    { start: 2102400, end: 2365200, reward: 20 },
-    { start: 2365200, end: 2628000, reward: 15 },
-    { start: 2628000, end: Infinity,reward: 0 }
-  ];
-
-  const current = rewards.findIndex((r) => r.start <= block_height && r.end > block_height);
-  const current_reward = (rewards[current]?.reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part;
-  const current_reward_end = rewards[current]?.end || 1_000_000_000_000_000;
-  const future_reward = rewards[current + 1]?.reward ? (rewards[current + 1]?.reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part : 0;
-  const total_blocks_in_year = 720 * 365;
-  const current_reward_part = current_reward * (current_reward_end - block_height);
-  const future_reward_part = future_reward * (total_blocks_in_year - (current_reward_end - block_height));
-  return current_reward_part + future_reward_part;
-}
-
-const get_annual_reward =  (block_height: number) => {
-  const rewards = [
-    { start: 0      , end: 262800 , reward: 202 },
-    { start: 262800 , end: 525600 , reward: 151 },
-    { start: 525600 , end: 788400 , reward: 113 },
-    { start: 788400 , end: 1051200, reward: 85 },
-    { start: 1051200, end: 1314000, reward: 64 },
-    { start: 1314000, end: 1576800, reward: 48 },
-    { start: 1576800, end: 1839600, reward: 36 },
-    { start: 1839600, end: 2102400, reward: 27 },
-    { start: 2102400, end: 2365200, reward: 20 },
-    { start: 2365200, end: 2628000, reward: 15 },
-    { start: 2628000, end: Infinity,reward: 0 }
-  ];
-
-  const current = rewards.findIndex((r) => r.start <= block_height && r.end > block_height);
-  const current_reward = rewards[current]?.reward;
-  const current_reward_end = rewards[current]?.end || 1_000_000_000_000_000;
-  const future_reward = rewards[current + 1]?.reward || 0;
-  const total_blocks_in_year = 720 * 365;
-  const current_reward_part = current_reward * (current_reward_end - block_height);
-  const future_reward_part = future_reward * (total_blocks_in_year - (current_reward_end - block_height));
-  return current_reward_part + future_reward_part;
-}
 
 export function Table() {
   const { detected } = useWallet();
@@ -80,8 +26,6 @@ export function Table() {
   const [orderField, setOrderField] = useState<any>("pool_id");
   const [blockHeight, setBlockHeight] = useState<any>(0);
   const [order, setOrder] = useState<any>("asc");
-  const [page, setPage] = useState<any>(1);
-  const [pager, setPager] = useState<any>(true);
   const [difficulty, setDifficulty] = useState<any>(0);
   const [hideNonProfitPools, setHideNonProfitPools] = useState<any>(true);
   const [stakingAmountRaw, setStakingAmount] = useState<any>("1000");
@@ -131,7 +75,7 @@ export function Table() {
   const filterer = (item: any) => {
     if (hideNonProfitPools) {
       if (item.margin_ratio === 1) return false;
-      if (item.cost_per_block >= 151) return false;
+      if (item.cost_per_block >= block_subsidy_at_height(blockHeight)) return false;
       return true;
     } else {
       return true;
@@ -162,25 +106,19 @@ export function Table() {
     }
   };
 
-  const injectApy = (stakingAmount: any) => (pool: any) => {
-    const probability_per_second = pool.effective_pool_balance * 1e11 * difficulty;
-
-    // APY estimation
-    const blocks_per_day = probability_per_second * 24 * 60 * 60;
-    const part = stakingAmount / (stakingAmount + pool.delegations_amount + pool.staker_balance);
-    // const reward_per_block = (reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part;
-    const annual_reward_delegator = get_annual_reward_delegator(blockHeight, pool, part);
-    const annual_reward_pool = get_annual_reward(blockHeight);
-    const reward_per_year = annual_reward_delegator;
-
-    // blocks_per_day / 720 is a part of 720 (total blocks in a day)
-    const apy = ((reward_per_year * blocks_per_day / 720) / stakingAmount) * 100; // * 100 to display percent
-
-    // other labels
-    const reward_per_day_pool = blocks_per_day * (annual_reward_pool / (720 * 365));
-    const reward_per_day_delegator = blocks_per_day * (annual_reward_delegator / (720 * 365)); // left for approximate reference
-    const part_label = (part * 100).toFixed(2);
-    const hours_for_block = (1 / probability_per_second / 3600).toFixed(2);
+  const injectApy = (amountToDelegate: any) => (pool: any) => {
+    const {
+      apy,
+      reward_per_day_pool,
+      reward_per_day_delegator,
+      part_label,
+      hours_for_block,
+    } = calculateDelegationInfo({
+      pool,
+      amountToDelegate,
+      blockHeight,
+      difficulty,
+    });
 
     return {
       ...pool,
