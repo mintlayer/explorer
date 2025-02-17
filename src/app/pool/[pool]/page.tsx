@@ -115,10 +115,10 @@ export default async function Pool({ params }: { params: { pool: string } }) {
                       iconTooltip: "VRF public key",
                     },
                     {
-                      title: "Decommission Destination",
+                      title: "Decommission Address",
                       value: data.decommission_destination,
                       icon: icon_time,
-                      iconTooltip: "Decommission Destination",
+                      iconTooltip: "Decommission Address",
                       link: data.decommission_destination ? `/address/${data.decommission_destination}` : undefined,
                     },
                   ]}
@@ -182,10 +182,10 @@ export default async function Pool({ params }: { params: { pool: string } }) {
                     iconTooltip: "VRF public key",
                   },
                   {
-                    title: "Decommission Destination",
+                    title: "Decommission Address",
                     value: data.decommission_destination,
                     icon: icon_time,
-                    iconTooltip: "Decommission Destination",
+                    iconTooltip: "Decommission Address",
                     link: data.decommission_destination ? `/address/${data.decommission_destination}` : undefined,
                   },
                 ]}
