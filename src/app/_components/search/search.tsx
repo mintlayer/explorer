@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import {useEffect, useRef, useState} from "react";
 import { useCallback } from "react";
 import classnames from "classnames";
 import Image from "next/image";
@@ -99,6 +99,9 @@ const pushByType = (push: any, type: string, query: string) => {
   if (type === "transaction") {
     push(tx_url_pattern(query.startsWith("0x") ? query.slice(2) : query));
   }
+  if (type === "transaction or block") {
+    push(tx_url_pattern(query.startsWith("0x") ? query.slice(2) : query));
+  }
   if (type === "address") {
     push(address_url_pattern(query));
   }
@@ -112,22 +115,35 @@ export const Search = () => {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]); // [block, tx, address, token]
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const onQueryUpdate = useCallback(
-    debounce((query: string) => {
-      const getData = async (query: string) => {
-        setLoading(true);
-        const res = await fetch("/api/search", { cache: "no-store", method: "POST", body: JSON.stringify({ query }) });
-        const data = await res.json();
-        setLoading(false);
-        return data;
-      };
-      if (query.length > 0) {
-        getData(query).then((data: any) => {
-          setResults(data);
+    debounce(async (query: string) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      setLoading(true);
+
+      try {
+        const res = await fetch("/api/search", {
+          cache: "no-store",
+          method: "POST",
+          body: JSON.stringify({ query }),
+          signal: controller.signal,
         });
-      } else {
-        setResults([]);
+        const data = await res.json();
+        setResults(data);
+      } catch (error) {
+        // @ts-ignore
+        if (error.name !== "AbortError") {
+          console.error("Fetch error:", error);
+        }
+      } finally {
+        setLoading(false);
       }
     }, 500),
     [],
@@ -148,6 +164,10 @@ export const Search = () => {
   const handleOnKeyPress = (event: any) => {
     // if enter pressed
     if (event.charCode === 13) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
       let [type] = getQueryType(query);
 
       pushByType(push, type, query);
@@ -162,6 +182,9 @@ export const Search = () => {
   };
 
   const onResultClick = (type: any, query: string) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     pushByType(push, type, query);
   };
 
