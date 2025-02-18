@@ -197,6 +197,7 @@ const processPools = async () => {
   `).run(JSON.stringify(result), Date.now());
 
   console.log("Update completed");
+  process.exit(0);
 };
 
 
