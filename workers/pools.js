@@ -1,9 +1,14 @@
 const Database = require("better-sqlite3");
+const fs = require("fs");
 const {effective_pool_balance} = require("../src/utils/mintlayer-crypto/pkg");
 
 const dotenv = require('dotenv');
 
-dotenv.config();
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local' });
+} else {
+  dotenv.config(); // Default loads `.env`
+}
 
 const isMainNetwork = process.env.NETWORK === "mainnet";
 
