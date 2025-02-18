@@ -8,6 +8,10 @@ export const revalidate = 120;
 export async function GET(request: Request, { params }: { params: { pool: string } }) {
   const row: any = db.prepare("SELECT * FROM pools WHERE id = 1").get();
 
+  if(!row) {
+    return NextResponse.json([]);
+  }
+
   const pools = JSON.parse(row.result);
 
   const response = pools;

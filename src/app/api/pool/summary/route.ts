@@ -12,6 +12,29 @@ export async function GET(request: Request) {
 
   const row: any = db.prepare("SELECT * FROM pools WHERE id = 1").get();
 
+  if(!row) {
+    const empty_response = {
+      validators_count: 0,
+      delegation_count: 0,
+      pools_amount: 0,
+      delegations_amount: 0,
+      total_amount: 0,
+      total_effective_amount: 0,
+      total_apy: 0,
+      updated_at: 0,
+    };
+
+    return new Response(JSON.stringify(empty_response), {
+      headers: {
+        "Content-Length": encoder.encode(JSON.stringify(empty_response)).byteLength.toString(),
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Accept",
+      },
+    });
+  }
+
   const pools = JSON.parse(row.result);
 
   const updated_at = row.updated_at;
