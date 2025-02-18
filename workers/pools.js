@@ -189,8 +189,6 @@ const processPools = async () => {
     return pool;
   });
 
-  console.log(JSON.stringify(result, null, 2));
-
   console.log('Saving data to the database...');
 
   db.prepare(`
