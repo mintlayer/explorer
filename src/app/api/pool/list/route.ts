@@ -16,5 +16,11 @@ export async function GET(request: Request, { params }: { params: { pool: string
 
   const response = pools;
 
-  return NextResponse.json(response);
+  return NextResponse.json(response, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Accept",
+    },
+  });
 }
