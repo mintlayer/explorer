@@ -185,16 +185,6 @@ export async function GET(request: Request, { params }: { params: { address: str
         token_balances[token_id].amount += +data_utxos[i].utxo.value.amount.decimal;
       }
     }
-    if (data_utxos[i].utxo.type === "IssueNft") {
-      const token_id = data_utxos[i].utxo.token_id;
-      if (!token_balances[token_id]) {
-        token_balances[token_id] = {
-          amount: 0,
-          amount_locked: 0,
-        };
-      }
-      token_balances[token_id].amount += 1;
-    }
   }
 
   // get token info for each token
