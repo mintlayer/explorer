@@ -107,7 +107,7 @@ export async function GET(request: Request) {
     },
   };
 
-  cache.set("summary_data", response, 24 * 60 * 60 * 1000); // 24 hours only for data_summary
+  cache.set("summary_data", response, 30 * 60 * 1000); // 30 min for data_summary
 
   return NextResponse.json(response, {
     headers: {
