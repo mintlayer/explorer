@@ -25,6 +25,8 @@ const tx_matcher = getMatcher("tx");
 const address_matcher = getMatcher("address");
 const pool_matcher = getMatcher("pool");
 const delegation_matcher = getMatcher("delegation");
+const token_matcher = getMatcher("token");
+const token_name_matcher = getMatcher("tokenName");
 
 // url patterns
 const block_url_pattern = (block_number: string) => `/block/${block_number}`;
@@ -32,6 +34,8 @@ const tx_url_pattern = (tx_hash: string) => `/tx/${tx_hash}`;
 const address_url_pattern = (address: string) => `/address/${address}`;
 const pool_url_pattern = (pool: string) => `/pool/${pool}`;
 const delegation_url_pattern = (delegation: string) => `/delegation/${delegation}`;
+const token_url_pattern = (token: string) => `/token/${token}`;
+const nft_url_pattern = (nft: string) => `/nft/${nft}`;
 
 const icons: any = {
   block: icon_block,
@@ -58,6 +62,9 @@ const getQueryType = (query: string) => {
   }
   if (query.match(delegation_matcher)) {
     types.push("delegation");
+  }
+  if (query.match(token_matcher)) {
+    types.push("token");
   }
   return types;
 };
@@ -86,6 +93,9 @@ const getQuerySkeleletonData = (query: string) => {
   if (type === "delegation") {
     data.push({ icon: "hash", value: shortenString(query) });
   }
+  if (type === "token") {
+    data.push({ icon: "hash", value: shortenString(query) });
+  }
   return data;
 };
 
@@ -107,6 +117,9 @@ const pushByType = (push: any, type: string, query: string) => {
   }
   if (type === "delegation") {
     push(delegation_url_pattern(query));
+  }
+  if (type === "token") {
+    push(token_url_pattern(query));
   }
 };
 

@@ -1,6 +1,7 @@
 import { Summary } from "@/app/_components/summary";
 import { Hero } from "@/app/_components/hero";
 import { InfoExpand } from "./_components/info_expand";
+import { redirect } from "next/navigation";
 
 // icons
 import icon_info from "@/app/(homepage)/_icons/16px/info.svg";
@@ -20,6 +21,12 @@ async function getData(token: any) {
     },
   });
   const data = await res.json();
+
+  // check if data.type === 'nft' and redirect to nft page with same id
+  if(data.type === 'nft') {
+    // redirect to nft page
+    redirect(`/nft/${token}`);
+  }
 
   return { data };
 }

@@ -9,6 +9,8 @@ const tx_matcher = getMatcher("tx");
 const address_matcher = getMatcher("address");
 const pool_matcher = getMatcher("pool");
 const delegation_matcher = getMatcher("delegation");
+const token_matcher = getMatcher("token");
+const token_name_matcher = getMatcher("tokenName");
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +93,32 @@ export async function POST(request: Request) {
     if (!delegation.error) {
       response.push({
         type: "delegation",
+        data: [{ icon: "hash", value: short_query }],
+      });
+    }
+  }
+
+  // is token id match against /token/
+  if (params.query.match(token_matcher)) {
+    const res = await fetch(process.env.SERVER_URL + "/api/token/" + params.query, { cache: "no-store" });
+    const token = await res.json();
+
+    if (!token.error) {
+      response.push({
+        type: "token",
+        data: [{ icon: "hash", value: short_query }],
+      });
+    }
+  }
+
+  // check nft endpoint too
+  if (params.query.match(token_name_matcher)) {
+    const res = await fetch(process.env.SERVER_URL + "/api/nft/" + params.query, { cache: "no-store" });
+    const nft = await res.json();
+
+    if (!nft.error) {
+      response.push({
+        type: "nft",
         data: [{ icon: "hash", value: short_query }],
       });
     }

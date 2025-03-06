@@ -22,6 +22,7 @@ export async function GET(request: Request, { params }: { params: { token: strin
     const data_nft = await res_nft.json();
 
     const response = {
+      type: 'nft',
       ...data_nft,
       token_ticker: data_nft.ticker,
     };
@@ -39,6 +40,7 @@ export async function GET(request: Request, { params }: { params: { token: strin
   let response: any = {};
 
   response = {
+    type: 'token',
     ...data,
     ...data_stats,
   };
