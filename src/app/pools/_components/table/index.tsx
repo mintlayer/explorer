@@ -1,26 +1,22 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Block } from "@/app/(homepage)/_components/block";
-import { Summary } from "@/app/_components/summary";
-import icon_hash from "@/app/(homepage)/_icons/16px/hash.svg";
 import icon_coin from "@/app/(homepage)/_icons/16px/coin.svg";
 import copy_icon from "@/app/(homepage)/_icons/16px/copy.svg";
-import icon_fee from "@/app/(homepage)/_icons/16px/fee.svg";
 import icon_block from "@/app/(homepage)/_icons/16px/block.svg";
 import icon_time from "@/app/(homepage)/_icons/16px/time.svg";
 import check_icon from "@/app/(homepage)/_icons/24px/check.svg";
-import icon_community from "@/app/(homepage)/_icons/16px/community.svg";
 import Link from "next/link";
 import { getCoin } from "@/utils/network";
 import Image from "next/image";
 
-import { Tooltip } from "react-tooltip";
-import { handleAction } from "next/dist/server/app-render/action-handler";
 import { Switch } from "@/app/tx/[tx]/_components/switch";
 import { formatML } from "@/utils/numbers";
 import { useWallet } from "@/hooks/useWallet";
 import { Modal } from "@/app/_components/modal";
+
+import {calculateDelegationInfo} from "@/utils/staking";
+import {block_subsidy_at_height} from "@/utils/emission";
 
 const coin = getCoin();
 
@@ -28,9 +24,8 @@ export function Table() {
   const { detected } = useWallet();
   const [pools, setPools] = useState<any>([]);
   const [orderField, setOrderField] = useState<any>("pool_id");
+  const [blockHeight, setBlockHeight] = useState<any>(0);
   const [order, setOrder] = useState<any>("asc");
-  const [page, setPage] = useState<any>(1);
-  const [pager, setPager] = useState<any>(true);
   const [difficulty, setDifficulty] = useState<any>(0);
   const [hideNonProfitPools, setHideNonProfitPools] = useState<any>(true);
   const [stakingAmountRaw, setStakingAmount] = useState<any>("1000");
@@ -63,6 +58,7 @@ export function Table() {
       const [block] = data;
       const difficulty = block?.target_difficulty;
       setDifficulty(difficulty);
+      setBlockHeight(block.block);
     };
     getDifficulty();
   }, []);
@@ -79,7 +75,7 @@ export function Table() {
   const filterer = (item: any) => {
     if (hideNonProfitPools) {
       if (item.margin_ratio === 1) return false;
-      if (item.cost_per_block === 202) return false;
+      if (item.cost_per_block >= block_subsidy_at_height(blockHeight)) return false;
       return true;
     } else {
       return true;
@@ -110,22 +106,19 @@ export function Table() {
     }
   };
 
-  const injectApy = (stakingAmount: any) => (pool: any) => {
-    const probability_per_second = pool.effective_pool_balance * 1e11 * difficulty;
-
-    const reward = 202;
-
-    // APY estimation
-    const blocks_per_day = probability_per_second * 24 * 60 * 60;
-    const part = stakingAmount / (stakingAmount + pool.delegations_amount + pool.staker_balance);
-    const reward_per_block = (reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part;
-    const apy = ((reward_per_block * blocks_per_day * 365) / stakingAmount) * 100; // * 100 to display percent
-
-    // other labels
-    const reward_per_day_pool = blocks_per_day * reward;
-    const reward_per_day_delegator = blocks_per_day * reward_per_block;
-    const part_label = (part * 100).toFixed(2);
-    const hours_for_block = (1 / probability_per_second / 3600).toFixed(2);
+  const injectApy = (amountToDelegate: any) => (pool: any) => {
+    const {
+      apy,
+      reward_per_day_pool,
+      reward_per_day_delegator,
+      part_label,
+      hours_for_block,
+    } = calculateDelegationInfo({
+      pool,
+      amountToDelegate,
+      blockHeight,
+      difficulty,
+    });
 
     return {
       ...pool,

@@ -14,11 +14,6 @@ export function Summary() {
   useEffect(() => {
     const fetchData = async () => {
       const resarray = Promise.all([
-        fetch("/api/pool/summary", {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }),
         fetch("/api/transaction/total", {
           cache: "no-store",
           headers: {
@@ -27,10 +22,26 @@ export function Summary() {
         }),
       ]);
 
-      const [res, res_transactions] = await resarray;
-      const [data, data_transaction] = await Promise.all([res.json(), res_transactions.json()]);
-      setData(data);
+      const [res_transactions] = await resarray;
+      const [data_transaction] = await Promise.all([res_transactions.json()]);
       setDataTransaction(data_transaction);
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const resarray = Promise.all([
+        fetch("/api/pool/summary", {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }),
+      ]);
+
+      const [res] = await resarray;
+      const [data] = await Promise.all([res.json()]);
+      setData(data);
     };
     fetchData();
   }, []);

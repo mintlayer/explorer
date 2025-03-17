@@ -41,10 +41,10 @@ export default async function Token({ params }: { params: { nft: string } }) {
     return `https://${cleanUrl[0]}.ipfs.w3s.link${cleanUrl[1]?'/'+cleanUrl[1]:''}`;
   }
 
-  const imageUrl = ipfsToHttps(data.media_uri.string);
-  const iconUrl = ipfsToHttps(data.icon_uri.string);
+  const imageUrl = data.media_uri ? ipfsToHttps(data.media_uri.string) : null;
+  const iconUrl = data.icon_uri ? ipfsToHttps(data.icon_uri.string) : null;
 
-  const metadataUrl = ipfsToHttps(data.additional_metadata_uri.string);
+  const metadataUrl = data.additional_metadata_uri ? ipfsToHttps(data.additional_metadata_uri.string) : null;
 
   return (
     <>
@@ -56,12 +56,22 @@ export default async function Token({ params }: { params: { nft: string } }) {
           <div className="flex flex-col md:flex-row gap-2">
             <div className="w-full md:w-1/2">
               <div className="mx-auto md:mb-5 bg-white p-2">
-                <img src={imageUrl}/>
+                {
+                  imageUrl ? (
+                    <img src={imageUrl}/>
+                  ) : <></>
+                }
+
               </div>
             </div>
             <div className="md:mb-5 w-full">
               <div className="mb-2 w-full relative">
-                <img src={iconUrl} className="w-20 h-20 absolute top-2 right-2" alt=""/>
+                {
+                  iconUrl ?
+                    (
+                      <img src={iconUrl} className="w-20 h-20 absolute top-2 right-2" alt=""/>
+                    ) : <></>
+                }
                 <Summary
                   data={[
                     { title: 'Ticker', value: data.ticker.string, icon: icon_info },
@@ -81,7 +91,7 @@ export default async function Token({ params }: { params: { nft: string } }) {
               <div className="mb-2 w-full">
                 <Summary
                   data={[
-                    { title: 'Metadata', value: data.additional_metadata_uri.string || '-', icon: icon_info },
+                    { title: 'Metadata', value: data.additional_metadata_uri?.string || '-', icon: icon_info },
                   ]}
                 />
 

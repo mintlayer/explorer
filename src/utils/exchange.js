@@ -6,11 +6,13 @@ export const getCMCInfo = async () => {
       headers: {
         "X-CMC_PRO_API_KEY": process.env.CMC_API_KEY,
       },
+      cache: "no-cache",
     });
     const data = await response.json();
     const quotes = data.data.ML.find(({ name }) => name === "Mintlayer").quote.USD;
     return quotes;
   } catch (error) {
+    throw new Error(error);
     console.error(error);
   }
 };
