@@ -72,15 +72,15 @@ describe("get_annual_subsidy_delegator", () => {
   };
 
   it("should return the correct annual subsidy for a delegator at a given height", () => {
-    const part = 0.5;
-    expect(get_annual_subsidy_delegator(0, profitable_pool, part)).toEqual(26542800);
-    expect(get_annual_subsidy_delegator(10, profitable_pool, part)).toEqual(26542545);
-    expect(get_annual_subsidy_delegator(2628001, profitable_pool, part)).toEqual(0);
+    const delegator_stake_ratio = 0.5;
+    expect(get_annual_subsidy_delegator(0, profitable_pool, delegator_stake_ratio)).toEqual(26542800);
+    expect(get_annual_subsidy_delegator(10, profitable_pool, delegator_stake_ratio)).toEqual(26542545);
+    expect(get_annual_subsidy_delegator(2628001, profitable_pool, delegator_stake_ratio)).toEqual(0);
   });
 
   it("should return the zero annual subsidy for a delegation to non profitable pool", () => {
-    const part = 0.5;
+    const delegator_stake_ratio = 0.5;
     const block_height = 0;
-    expect(get_annual_subsidy_delegator(block_height, not_profitable_pool, part)).toEqual(0);
+    expect(get_annual_subsidy_delegator(block_height, not_profitable_pool, delegator_stake_ratio)).toEqual(0);
   });
 });

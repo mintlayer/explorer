@@ -46,11 +46,11 @@ export const get_annual_subsidy =  (block_height: number) => {
   return current_subsidy_part + future_subsidy_part;
 }
 
-export const get_annual_subsidy_delegator =  (block_height: number, pool: any, part: any) => {
+export const get_annual_subsidy_delegator =  (block_height: number, pool: any, delegator_stake_ratio: number) => {
   const current = EMISSION_TABLE.findIndex(({ range }) => range[0] <= block_height && range[1] > block_height);
-  const current_reward = (EMISSION_TABLE[current].reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part;
+  const current_reward = (EMISSION_TABLE[current].reward - pool.cost_per_block) * (1 - pool.margin_ratio) * delegator_stake_ratio;
   const current_reward_end = EMISSION_TABLE[current].range[1] || Infinity;
-  const future_reward = EMISSION_TABLE[current + 1] && EMISSION_TABLE[current + 1].reward ? (EMISSION_TABLE[current + 1].reward - pool.cost_per_block) * (1 - pool.margin_ratio) * part : 0;
+  const future_reward = EMISSION_TABLE[current + 1] && EMISSION_TABLE[current + 1].reward ? (EMISSION_TABLE[current + 1].reward - pool.cost_per_block) * (1 - pool.margin_ratio) * delegator_stake_ratio : 0;
   const total_blocks_in_year = 720 * 365;
   const current_reward_part = current_reward === 0 ? 0 : current_reward * (current_reward_end - block_height);
   const future_reward_part = future_reward === 0 ? 0 : future_reward * (total_blocks_in_year - (current_reward_end - block_height));

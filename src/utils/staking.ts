@@ -14,9 +14,9 @@ export const calculateDelegationInfo = ({ amountToDelegate, pool, blockHeight, d
 
   // APY estimation
   const pool_blocks_per_day = probability_per_second * 24 * 60 * 60;
-  const part = amountToDelegate / (amountToDelegate + pool.delegations_amount + pool.staker_balance);
+  const delegator_stake_ratio = amountToDelegate / (amountToDelegate + pool.delegations_amount + pool.staker_balance);
 
-  const annual_subsidy_delegator = get_annual_subsidy_delegator(blockHeight, pool, part);
+  const annual_subsidy_delegator = get_annual_subsidy_delegator(blockHeight, pool, delegator_stake_ratio);
   const annual_subsidy_pool = get_annual_subsidy(blockHeight);
 
   // blocks_per_day / 720 is a part of 720 (total blocks in a day)
@@ -25,7 +25,7 @@ export const calculateDelegationInfo = ({ amountToDelegate, pool, blockHeight, d
   // other labels
   const reward_per_day_pool = pool_blocks_per_day * (annual_subsidy_pool / (TOTAL_BLOCKS_PER_DAY * 365));
   const reward_per_day_delegator = pool_blocks_per_day * (annual_subsidy_delegator / (TOTAL_BLOCKS_PER_DAY * 365)); // left for approximate reference
-  const part_label = (part * 100).toFixed(2);
+  const part_label = (delegator_stake_ratio * 100).toFixed(2);
   const hours_for_block = (1 / probability_per_second / 3600).toFixed(2);
 
   return {
