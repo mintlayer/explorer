@@ -149,7 +149,7 @@ export const Header = () => {
                         <Link className="group/link relative hover:text-base-dark" href={net.href} target={net.target}>
                           {net.label}
                           <span
-                            className={`h-[2px] w-0 ${net.accent?'bg-['+net.accent+']':'bg-[#11967f]'} absolute -bottom-1 left-0 transform skew-x-[-60deg] group-hover/link:w-[65%] transition-all ease-in-out duration-300`}
+                            className={`h-[2px] w-0 ${net.accent?'bg-[#a383ff]':'bg-[#11967f]'} absolute -bottom-1 left-0 transform skew-x-[-60deg] group-hover/link:w-[65%] transition-all ease-in-out duration-300`}
                             aria-hidden="true"
                           ></span>
                         </Link>
