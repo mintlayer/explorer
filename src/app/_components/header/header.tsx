@@ -14,6 +14,7 @@ type MenuLink = {
   label: string;
   href: string;
   target?: "_blank" | "_self" | "_parent" | "_top";
+  accent?: string;
 };
 
 const NEWS: { title: "string" }[] = [];
@@ -25,6 +26,11 @@ const NETS: MenuLink[] = [
   {
     label: "Testnet",
     href: "https://lovelace.explorer.mintlayer.org",
+  },
+  {
+    label: "Zk Thunder Testnet",
+    href: "https://explorer.testnet.zkthunder.fi",
+    accent: "#a383ff",
   },
 ];
 const MENU_LINKS: MenuLink[] = [
@@ -133,7 +139,7 @@ export const Header = () => {
               </div>
               <div
                 className="absolute top-0 right-0 bg-white mt-12 px-6 pt-4 pb-2 shadow-md invisible z-100 text-base font-medium opacity-0 transition-all ease-in-out duration-100
-                  delay-100 translate-y-[-5px] w-[172px] group-hover/dropdown:visible group-hover/dropdown:opacity-100 group-hover/dropdown:transition-none group-hover/dropdown:delay-0
+                  delay-100 translate-y-[-5px] w-[190px] group-hover/dropdown:visible group-hover/dropdown:opacity-100 group-hover/dropdown:transition-none group-hover/dropdown:delay-0
                   group-hover/dropdown:translate-x-0 group-hover/dropdown:translate-y-0"
               >
                 <ul>
@@ -143,7 +149,7 @@ export const Header = () => {
                         <Link className="group/link relative hover:text-base-dark" href={net.href} target={net.target}>
                           {net.label}
                           <span
-                            className="h-[2px] w-0 bg-[#11967f] absolute -bottom-1 left-0 transform skew-x-[-60deg] group-hover/link:w-[65%] transition-all ease-in-out duration-300"
+                            className={`h-[2px] w-0 ${net.accent?'bg-['+net.accent+']':'bg-[#11967f]'} absolute -bottom-1 left-0 transform skew-x-[-60deg] group-hover/link:w-[65%] transition-all ease-in-out duration-300`}
                             aria-hidden="true"
                           ></span>
                         </Link>
