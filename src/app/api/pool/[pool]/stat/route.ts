@@ -5,35 +5,54 @@ const NODE_API_URL = getUrl();
 
 export const dynamic = "force-dynamic";
 
+interface BlockStats {
+  block_count: number;
+}
+
+interface DailyStats {
+  [date: string]: BlockStats;
+}
+
+interface DailyStatEntry {
+  date: string;
+  stats: BlockStats;
+}
+
 export async function GET(request: Request, { params }: { params: { pool: string } }) {
   const pool = params.pool;
-  const searchParams = new URL(request.url).searchParams;
+  const currentTime = Math.floor(Date.now() / 1000);
 
-  let from = Math.floor(Date.now() / 1000) - 86400;
+  const dailyStatsPromises = Array.from({ length: 30 }, (_, i) => {
+    const dayEnd = currentTime - (i * 86400);
+    const dayStart = dayEnd - 86400;
 
-  if (searchParams.get("7d")) {
-    from = Math.floor(Date.now() / 1000) - 604800;
-  }
-
-  const to = Math.floor(Date.now() / 1000);
-
-  const res = await fetch(NODE_API_URL + "/pool/" + pool + "/block-stats?from=" + from + "&to=" + to, {
-    cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    return fetch(
+      `${NODE_API_URL}/pool/${pool}/block-stats?from=${dayStart}&to=${dayEnd}`,
+      {
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    ).then(res => res.json().then(data => ({
+      date: new Date(dayStart * 1000).toISOString().split('T')[0], // Format as YYYY-MM-DD
+      stats: data
+    })));
   });
-  const data = await res.json();
 
-  let response: any = {};
+  try {
+    const dailyStats: DailyStatEntry[] = await Promise.all(dailyStatsPromises);
 
-  response.pool = pool;
-  response.cost_per_block = data.cost_per_block.decimal;
-  response.margin_ratio_per_thousand = data.margin_ratio_per_thousand;
-  response.staker_balance = data.staker_balance.decimal.toFixed(4);
-  response.vrf_public_key = data.vrf_public_key;
-  response.decommission_destination = data.decommission_destination;
-  response.mark = 0;
+    const response: DailyStats = dailyStats.reduce((acc: DailyStats, { date, stats }: DailyStatEntry) => {
+      acc[date] = stats;
+      return acc;
+    }, {} as DailyStats);
 
-  return NextResponse.json(response);
+    return NextResponse.json(response);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to fetch block stats" },
+      { status: 500 }
+    );
+  }
 }

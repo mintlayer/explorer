@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, {useEffect} from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
@@ -27,6 +27,7 @@ import { WalletConnect } from "@/app/_components/wallet_connect";
 import { NotFound } from "@/app/_components/not-found";
 
 import { StakeButton } from "./_components/stake_button";
+import { Stats } from "@/app/pool/[pool]/_components/stats";
 
 const coin = getCoin();
 
@@ -165,31 +166,34 @@ export default async function Pool({ params }: { params: { pool: string } }) {
               ) : (
                 <></>
               )}
-              <Summary
-                data={[
-                  {
-                    title: "Pool",
-                    value: data.pool,
-                    icon: icon_hash,
-                    iconTooltip: "Pool",
-                    qrCode: data.pool,
-                    copy: data.pool,
-                  },
-                  {
-                    title: "VRF public key",
-                    value: data.vrf_public_key,
-                    icon: icon_time,
-                    iconTooltip: "VRF public key",
-                  },
-                  {
-                    title: "Decommission Address",
-                    value: data.decommission_destination,
-                    icon: icon_time,
-                    iconTooltip: "Decommission Address",
-                    link: data.decommission_destination ? `/address/${data.decommission_destination}` : undefined,
-                  },
-                ]}
-              />
+              <div className="flex flex-col h-full">
+                <Summary
+                  data={[
+                    {
+                      title: "Pool",
+                      value: data.pool,
+                      icon: icon_hash,
+                      iconTooltip: "Pool",
+                      qrCode: data.pool,
+                      copy: data.pool,
+                    },
+                    {
+                      title: "VRF public key",
+                      value: data.vrf_public_key,
+                      icon: icon_time,
+                      iconTooltip: "VRF public key",
+                    },
+                    {
+                      title: "Decommission Address",
+                      value: data.decommission_destination,
+                      icon: icon_time,
+                      iconTooltip: "Decommission Address",
+                      link: data.decommission_destination ? `/address/${data.decommission_destination}` : undefined,
+                    },
+                  ]}
+                />
+                <Stats pool_id={data.pool} />
+              </div>
             </div>
             <div className="md:col-span-2 grid grid-cols-1 grid-rows-3 gap-4 md:-ml-20">
               <HeadingBox
