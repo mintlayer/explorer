@@ -27,17 +27,69 @@ export default function TokenVerificationForm() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+  
     const { tokenId, ticker, projectName, description, email, agreed } = formData
-
+  
     if (!tokenId || !ticker || !projectName || !description || !email || !agreed) {
       alert('Please fill in all required fields and agree to the terms.')
       return
     }
-
-    console.log('Token verification request:', formData)
-    alert('Request submitted!')
+  
+    const TELEGRAM_BOT_TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN!
+    const TELEGRAM_CHAT_ID = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID!
+  
+    const message = `
+🟦 *New token verification request*
+🔹 *Token ID:* ${formData.tokenId}
+🔹 *Ticker:* ${formData.ticker}
+🔹 *Project Name:* ${formData.projectName}
+🔹 *Description:* ${formData.description}
+🔹 *Website:* ${formData.website || '-'}
+🔹 *Logo:* ${formData.logoUrl || '-'}
+🔹 *Contact Info:* ${formData.contactInfo || '-'}
+🔹 *Additional Links:* ${formData.links || '-'}
+🔹 *Submitter:* ${formData.submitterName || '-'}
+📧 *Email:* ${formData.email}
+`
+  
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: 'Markdown',
+        }),
+      })
+  
+      if (res.ok) {
+        alert('Request submitted successfully!')
+        // Reset form after successful submission
+        setFormData({
+          tokenId: '',
+          ticker: '',
+          projectName: '',
+          description: '',
+          website: '',
+          logoUrl: '',
+          contactInfo: '',
+          email: '',
+          links: '',
+          submitterName: '',
+          agreed: false,
+        })
+      } else {
+        alert('Error sending to Telegram.')
+      }
+    } catch (error) {
+      console.error('Telegram error:', error)
+      alert('Connection error with Telegram.')
+    }
   }
 
   return (
