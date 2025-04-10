@@ -1,7 +1,7 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 const TokenLoader = ({ setFormData }: { setFormData: Function }) => {
   const searchParams = useSearchParams()
@@ -10,6 +10,11 @@ const TokenLoader = ({ setFormData }: { setFormData: Function }) => {
   const [tokenInfo, setTokenInfo] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!tokenId || typeof tokenId !== 'string') return
@@ -39,7 +44,7 @@ const TokenLoader = ({ setFormData }: { setFormData: Function }) => {
       })
   }, [tokenId, setFormData])
 
-  if (!tokenId) return null
+  if (!mounted || !tokenId) return null // ⚠️ Фикс для гидратации
 
   return (
     <div className="mt-6 p-4 border border-gray-300 rounded-md bg-white">
