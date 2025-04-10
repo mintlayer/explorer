@@ -1,8 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 export default function TokenVerificationForm() {
+  const searchParams = useSearchParams()
+  const tokenIdFromUrl = searchParams.get('tokenId')
+
+  const [tokenInfo, setTokenInfo] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   const [formData, setFormData] = useState({
     tokenId: '',
     ticker: '',
@@ -16,6 +24,35 @@ export default function TokenVerificationForm() {
     submitterName: '',
     agreed: false,
   })
+
+  useEffect(() => {
+    if (tokenIdFromUrl) {
+      setLoading(true)
+      fetch(`https://api-server-lovelace.mintlayer.org/api/v2/token/${tokenIdFromUrl}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Token not found')
+          return res.json()
+        })
+        .then((data) => {
+          setTokenInfo(data)
+          setLoading(false)
+
+          // Автозаполнение формы:
+          setFormData((prev) => ({
+            ...prev,
+            tokenId: data.token_id,
+            ticker: data.ticker || '',
+            projectName: data.ticker || '',
+            description: '', // остаётся пустым — пользователь сам заполняет
+          }))
+        })
+        .catch((err) => {
+          console.error(err)
+          setError('Unable to load token information')
+          setLoading(false)
+        })
+    }
+  }, [tokenIdFromUrl])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -97,6 +134,26 @@ export default function TokenVerificationForm() {
       <h2 className="text-3xl font-bold mb-6 text-gray-800">
         Token Verification Request
       </h2>
+      
+      {tokenIdFromUrl && (
+        <div className="bg-white p-4 border border-gray-300 rounded-lg mb-6">
+          <h3 className="font-semibold text-lg mb-3">Token Information:</h3>
+
+          {loading && <p className="text-gray-500">Loading...</p>}
+          {error && <p className="text-red-500">{error}</p>}
+
+          {tokenInfo && (
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li><strong>Token ID:</strong> {tokenInfo.token_id}</li>
+              <li><strong>Ticker:</strong> {tokenInfo.ticker}</li>
+              <li><strong>Total supply:</strong> {tokenInfo.total_supply}</li>
+              <li><strong>Frozen:</strong> {tokenInfo.frozen ? 'yes' : 'no'}</li>
+              <li><strong>Locked:</strong> {tokenInfo.locked ? 'yes' : 'no'}</li>
+            </ul>
+          )}
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block font-medium mb-1">Token ID *</label>
