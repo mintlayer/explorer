@@ -17,7 +17,7 @@ const TokenLoader = ({ setFormData }: { setFormData: Function }) => {
   }, [])
 
   useEffect(() => {
-    if (!tokenId || typeof tokenId !== 'string') return
+    if (!mounted || !tokenId || typeof tokenId !== 'string') return
 
     setLoading(true)
 
@@ -42,9 +42,9 @@ const TokenLoader = ({ setFormData }: { setFormData: Function }) => {
         setError('Error loading token or token not found')
         setLoading(false)
       })
-  }, [tokenId, setFormData])
+  }, [tokenId, setFormData, mounted])
 
-  if (!mounted || !tokenId) return null // ⚠️ Фикс для гидратации
+  if (!mounted || !tokenId) return null // ⚠️ Не отображаем ничего до монтирования компонента
 
   return (
     <div className="mt-6 p-4 border border-gray-300 rounded-md bg-white">
@@ -53,7 +53,8 @@ const TokenLoader = ({ setFormData }: { setFormData: Function }) => {
       {loading && <p className="text-gray-500">Loading data...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
-      {tokenInfo && (
+      {/* Отображаем данные токена только на клиенте после загрузки */}
+      {mounted && tokenInfo && (
         <ul className="text-sm text-gray-800 space-y-1">
           <li><strong>Token ID:</strong> {tokenInfo.token_id || '—'}</li>
           <li><strong>Ticker:</strong> {tokenInfo.token_ticker?.string || '—'}</li>
