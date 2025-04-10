@@ -26,8 +26,8 @@ const TokenLoader = ({ setFormData }: { setFormData: Function }) => {
         setFormData((prev: any) => ({
           ...prev,
           tokenId: data.token_id,
-          ticker: data.ticker || '',
-          projectName: data.ticker || '',
+          ticker: data.token_ticker?.string || '',
+          projectName: data.token_ticker?.string || '',
           description: '',
         }))
         setLoading(false)
@@ -50,11 +50,29 @@ const TokenLoader = ({ setFormData }: { setFormData: Function }) => {
 
       {tokenInfo && (
         <ul className="text-sm text-gray-800 space-y-1">
-          <li><strong>Token ID:</strong> {tokenInfo.token_id}</li>
-          <li><strong>Ticker:</strong> {tokenInfo.ticker}</li>
-          <li><strong>Total Supply:</strong> {tokenInfo.total_supply}</li>
-          <li><strong>Frozen:</strong> {tokenInfo.frozen ? 'yes' : 'no'}</li>
-          <li><strong>Locked:</strong> {tokenInfo.locked ? 'yes' : 'no'}</li>
+          <li><strong>Token ID:</strong> {tokenInfo.token_id || '—'}</li>
+          <li><strong>Ticker:</strong> {tokenInfo.token_ticker?.string || '—'}</li>
+          <li><strong>Total Supply:</strong> {tokenInfo.total_supply?.Fixed?.atoms || '—'}</li>
+          <li><strong>Circulating Supply:</strong> {tokenInfo.circulating_supply?.atoms || '—'}</li>
+          <li><strong>Decimals:</strong> {tokenInfo.number_of_decimals ?? '—'}</li>
+          <li><strong>Frozen:</strong> {tokenInfo.frozen === true ? 'yes' : tokenInfo.frozen === false ? 'no' : '—'}</li>
+          <li><strong>Locked:</strong> {tokenInfo.is_locked === true ? 'yes' : tokenInfo.is_locked === false ? 'no' : '—'}</li>
+          <li><strong>Freezable:</strong> {tokenInfo.is_token_freezable === true ? 'yes' : tokenInfo.is_token_freezable === false ? 'no' : '—'}</li>
+          <li><strong>Unfreezable:</strong> {tokenInfo.is_token_unfreezable === true ? 'yes' : tokenInfo.is_token_unfreezable === false ? 'no' : '—'}</li>
+          <li><strong>Authority:</strong> {tokenInfo.authority || '—'}</li>
+          <li>
+            <strong>Metadata URI:</strong>{' '}
+            {tokenInfo.metadata_uri?.string ? (
+              <a
+                href={tokenInfo.metadata_uri.string}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline"
+              >
+                {tokenInfo.metadata_uri.string}
+              </a>
+            ) : '—'}
+          </li>
         </ul>
       )}
     </div>
