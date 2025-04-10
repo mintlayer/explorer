@@ -236,7 +236,7 @@ export default function TokenVerificationForm() {
 
         <button
           type="submit"
-          className="w-full bg-secondary-100 hover:bg-secondary-110 text-base-black font-semibold py-2 px-4 rounded-lg"
+          className="w-full bg-base-dark hover:bg-opacity-90 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
         >
           Submit Request
         </button>
