@@ -226,17 +226,17 @@ export default function TokenVerificationForm() {
             name="agreed"
             checked={formData.agreed}
             onChange={handleChange}
-            className="mt-1"
+            className="mt-1 accent-[#37DB8C]"
             required
           />
           <label className="text-sm text-gray-700">
-            I agree to the <a href="/terms" className="text-blue-600 underline">terms and conditions</a>
+            I agree to the <a href="/terms" className="text-[#37DB8C] underline">terms and conditions</a>
           </label>
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg"
+          className="w-full bg-[#37DB8C] hover:bg-[#2fb978] text-white font-semibold py-2 px-4 rounded-lg"
         >
           Submit Request
         </button>
