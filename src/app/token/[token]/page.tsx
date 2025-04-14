@@ -2,13 +2,26 @@ import { Summary } from "@/app/_components/summary";
 import { Hero } from "@/app/_components/hero";
 import { InfoExpand } from "./_components/info_expand";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 // icons
 import icon_info from "@/app/(homepage)/_icons/16px/info.svg";
 import { headers } from "next/headers";
 import { NotFound } from "@/app/_components/not-found";
 import React from "react";
-import {Metadata} from "@/app/nft/[nft]/_components/metadata";
+// import {Metadata} from "@/app/nft/[nft]/_components/metadata";
+import TokenMetadataViewer from "@/app/_components/token-metadata-viewer";
+
+// Example list of verified token IDs
+const VERIFIED_TOKENS = [
+  "mmltk1rch870scvx0pa9ymkftj28jusqx2r8llxnfl20y06e6exalxuhkqv2arc2",
+  "tmltk1aa3vvztufv5m054klp960p6f6pf59ugxp394x7n42v0clgwhrw3q3mpcq3",
+  // Add more verified token IDs here
+];
+
+const isTokenVerified = (tokenId: string): boolean => {
+  return VERIFIED_TOKENS.includes(tokenId);
+};
 
 async function getData(token: any) {
   const headersList = headers();
@@ -43,9 +56,10 @@ export default async function Token({ params }: { params: { token: string } }) {
     return <NotFound title={"Token not found"} subtitle={"Token not found"} />;
   }
 
+  // Упрощенная функция - просто возвращает исходный URL для обработки в клиентском компоненте
   const ipfsToHttps = (url: string) => {
-    const cleanUrl = url.replace('ipfs://', '').split('/');
-    return `https://${cleanUrl[0]}.ipfs.w3s.link${cleanUrl[1]?'/'+cleanUrl[1]:''}`;
+    if (!url) return '';
+    return url;
   }
 
   const metadataUrl = ipfsToHttps(data.metadata_uri.string);
@@ -55,7 +69,27 @@ export default async function Token({ params }: { params: { token: string } }) {
       <Hero>
         <div className="max-w-6xl px-5 md:mx-auto">
           <div className="md:col-span-7">
-            <div className="text-5xl font-bold mt-4 mb-8 leading-[4rem]">{data.token_ticker.string}</div>
+            <div className="flex items-center justify-between mb-8">
+              <div className="text-5xl font-bold leading-[4rem]">{data.token_ticker.string}</div>
+              
+              {isTokenVerified(token) ? (
+                <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-md text-green-500 font-medium">
+                  <svg className="w-4 h-4" fill="#37DB8C" viewBox="0 0 24 24">
+                    <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.4-1.4z" />
+                  </svg>
+                  Already Verified
+                </div>
+              ) : (
+                <Link href={`/token-verify?tokenId=${token}`}>
+                  <button className="flex items-center gap-2 bg-primary-100 text-white px-4 py-2 text-sm rounded-md hover:bg-primary-110 transition">
+                    <svg className="w-4 h-4" fill="#37DB8C" viewBox="0 0 24 24">
+                      <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.4-1.4z" />
+                    </svg>
+                    Verify Token on Mintlayer
+                  </button>
+                </Link>
+              )}
+            </div>
           </div>
           <div className="mb-8">
             <Summary
@@ -100,7 +134,7 @@ export default async function Token({ params }: { params: { token: string } }) {
               ]}
             />
 
-            <Metadata metadataUrl={metadataUrl}/>
+            <TokenMetadataViewer metadataUrl={metadataUrl}/>
           </div>
         </div>
       </Hero>
