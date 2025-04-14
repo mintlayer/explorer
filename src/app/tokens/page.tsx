@@ -26,7 +26,14 @@ export default async function Tokens({
       <Hero>
         <div className="max-w-6xl md:mx-auto px-5">
           <div className="md:col-span-7">
-            <div className="text-5xl font-bold mt-4 mb-8 leading-[4rem]">Tokens</div>
+            <div className="flex items-center justify-between mb-8">
+              <div className="text-5xl font-bold leading-[4rem]">Tokens</div>
+              <Link href="/token-verify">
+                <button className="bg-primary-100 text-white px-4 py-2 text-sm rounded-md hover:bg-primary-110 transition">
+                  Verify Token on Mintlayer
+                </button>
+              </Link>
+            </div>
           </div>
           <div className="md:col-span-12 -mx-5"></div>
           <div className="grid md:grid-cols-12 gap-4 mb-8">
