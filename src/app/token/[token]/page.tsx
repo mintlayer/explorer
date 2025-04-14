@@ -74,7 +74,13 @@ export default async function Token({ params }: { params: { token: string } }) {
               
               {isTokenVerified(token) ? (
                 <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-md text-green-500 font-medium">
-                  <svg className="w-4 h-4" fill="#37DB8C" viewBox="0 0 24 24">
+                  <svg 
+                    className="w-5 h-5" 
+                    fill="#37DB8C" 
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    stroke="#37DB8C"
+                  >
                     <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.4-1.4z" />
                   </svg>
                   Already Verified
@@ -82,7 +88,13 @@ export default async function Token({ params }: { params: { token: string } }) {
               ) : (
                 <Link href={`/token-verify?tokenId=${token}`}>
                   <button className="flex items-center gap-2 bg-primary-100 text-white px-4 py-2 text-sm rounded-md hover:bg-primary-110 transition">
-                    <svg className="w-4 h-4" fill="#37DB8C" viewBox="0 0 24 24">
+                    <svg 
+                      className="w-5 h-5" 
+                      fill="#37DB8C" 
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      stroke="#37DB8C"
+                    >
                       <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.4-1.4z" />
                     </svg>
                     Verify Token on Mintlayer
