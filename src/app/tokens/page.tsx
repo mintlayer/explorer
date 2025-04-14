@@ -29,7 +29,14 @@ export default async function Tokens({
             <div className="flex items-center justify-between mb-8">
               <div className="text-5xl font-bold leading-[4rem]">Tokens</div>
               <Link href="/token-verify">
-                <button className="bg-primary-100 text-white px-4 py-2 text-sm rounded-md hover:bg-primary-110 transition">
+                <button className="flex items-center gap-2 bg-primary-100 text-white px-4 py-2 text-sm rounded-md hover:bg-primary-110 transition">
+                  <svg
+                    className="w-4 h-4"
+                    fill="#37DB8C"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.4-1.4z" />
+                  </svg>
                   Verify Token on Mintlayer
                 </button>
               </Link>
