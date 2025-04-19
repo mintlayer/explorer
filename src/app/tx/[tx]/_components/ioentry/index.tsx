@@ -77,7 +77,14 @@ export const IOEntry = ({ data, expand, type, metadata }: any) => {
       link = `/address/${label}`;
     }
 
-    if (data.type === "LockThenTransfer") {
+    if (data.type === "LockThenTransfer" && !data.destination) { // TODO: fake LockThenTransfer, Burn in fact!
+      amount = data.value.amount?.decimal;
+      label = '';
+      data.type = "Burn";
+      link = `/address/${label}`;
+    }
+
+    if (data.type === "LockThenTransfer" && data.destination) { // true LockThenTransfer
       amount = data.value.amount?.decimal;
       label = data.destination;
       link = `/address/${label}`;
