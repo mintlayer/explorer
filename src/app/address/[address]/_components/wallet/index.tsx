@@ -90,7 +90,7 @@ export const Wallet = ({ data }: any) => {
                           {formatDate(vesting.unlock_time)}
                         </td>
                         <td className="px-4 py-2 border-b border-white">
-                          {formatML(vesting.amount.toString())} {coin}
+                          {formatML(vesting.amount.toString())}
                         </td>
                         <td className="px-4 py-2 border-b border-white"></td>
                       </tr>
