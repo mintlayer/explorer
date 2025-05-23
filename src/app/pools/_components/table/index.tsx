@@ -17,11 +17,12 @@ import { Modal } from "@/app/_components/modal";
 
 import {calculateDelegationInfo} from "@/utils/staking";
 import {block_subsidy_at_height} from "@/utils/emission";
+import {WalletConnect} from "@/app/_components/wallet_connect";
 
 const coin = getCoin();
 
 export function Table() {
-  const { detected } = useWallet();
+  const { detected, delegations, handleConnect, handleDelegate } = useWallet();
   const [pools, setPools] = useState<any>([]);
   const [orderField, setOrderField] = useState<any>("pool_id");
   const [blockHeight, setBlockHeight] = useState<any>(0);
@@ -33,8 +34,6 @@ export function Table() {
 
   const [openModal, setOpenModal] = useState(false);
   const [poolId, setPoolId] = useState("");
-
-  const { handleDelegate } = useWallet();
 
   const apyCalculator = difficulty !== 0;
 
@@ -130,8 +129,33 @@ export function Table() {
     };
   };
 
+  const injectDelegations = (delegations: any) => (pool: any) => {
+    if(!detected) return pool;
+
+    const delegationsByPoolId = delegations.reduce((acc: any, delegation: any) => {
+      const poolId = delegation.pool_id;
+      if (!acc[poolId]) {
+        acc[poolId] = [];
+      }
+      acc[poolId].push(delegation);
+      return acc;
+    }, {});
+
+    console.log('delegationsByPoolId', delegationsByPoolId);
+
+    return {
+      ...pool,
+      delegation_exists: !!delegationsByPoolId[pool.pool_id],
+      delegation_balance: delegationsByPoolId[pool.pool_id]?.reduce((acc: any, delegation: any) => {
+        return acc + parseFloat(delegation.balance.decimal);
+      }, 0) || 0,
+    }
+  }
+
   return (
     <>
+      <WalletConnect handleConnect={handleConnect} detected={detected} delegations={delegations}/>
+
       {openModal && (
         <Modal active={openModal} setActive={setOpenModal}>
           <div className="text-xl font-semibold w-full">Delegating to a pool that has reached saturation</div>
@@ -371,6 +395,7 @@ export function Table() {
         <tbody className="flex flex-col md:table-row-group">
           {pools
             .map(injectApy(stakingAmount))
+            .map(injectDelegations(delegations))
             ?.sort(sorter)
             .filter(filterer)
             .map((value: any, i: number) => {
@@ -511,8 +536,17 @@ export function Table() {
                       className={`${detected ? "bg-primary-100 hover:bg-primary-110" : "bg-secondary-100"} px-2 py-1 text-white rounded`}
                       onClick={() => handleStackPool(value.balance, value.pool_id)}
                     >
-                      Stake
+                      {value?.delegation_exists ? 'Add Coins' : 'Join'}
                     </button>
+                    {value?.delegation_balance > 0 ? (
+                      <div
+                        className="cursor-pointer ml-2"
+                        data-tooltip-id="tooltip"
+                        data-tooltip-content={`You have ${formatML(value.delegation_balance)} ${coin} in this pool`}
+                      >
+                        <Image className="inline" src={icon_coin} alt="" />
+                      </div>
+                    ) : <></>}
                   </td>
                 </tr>
               );
