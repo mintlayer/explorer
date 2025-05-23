@@ -6,9 +6,7 @@ import Link from "next/link";
 import icon_firefox from "./ff-addon.svg";
 import icon_chrome from "./chrome-white.svg";
 
-export function WalletConnect() {
-  const { handleConnect, detected } = useWallet();
-
+export function WalletConnect({ handleConnect, detected, delegations }: any) {
   if (!detected) {
     return (
       <div className="mt-10 max-w-2xl mx-auto bg-white shadow-md rounded-md p-4 hidden md:block">
@@ -62,6 +60,9 @@ export function WalletConnect() {
       </div>
       <div className="mt-4">
         <div className="text-gray-500">Wallet detected. Choose pool and press Stake</div>
+        <div>
+          You have {delegations.length} delegations.
+        </div>
       </div>
     </div>
   );

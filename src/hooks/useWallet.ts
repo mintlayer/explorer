@@ -1,53 +1,43 @@
 import { useEffect, useState } from "react";
-
-const requiredVersion = "1.2.0";
+import { Client } from "@mintlayer/sdk";
 
 export function useWallet() {
-  const [extensionId, setExtensionId] = useState("");
   const [detected, setDetected] = useState(false);
   const [balance, setBalance] = useState(0);
+  const [client, setClient] = useState<Client | null>(null);
+  const [delegations, setDelegations] = useState<any[]>([]);
 
   useEffect(() => {
-    window.addEventListener("InitWalletResponse", (evt: any) => {
-      if (evt && evt.detail && "version" in evt.detail) {
-        const data = evt.detail;
-        setDetected(data.version);
-        setExtensionId(data.extension_id);
+    const fetchClient = async () => {
+      try {
+        const newClient = await Client.create({ network: "testnet" });
+        setClient(newClient);
+      } catch (error) {
+        console.error("Error creating client:", error);
       }
-    });
-    const event = new CustomEvent("InitWalletRequest");
-    window.dispatchEvent(event);
+    };
+
+    fetchClient();
   }, []);
 
-  const handleDelegate = (pool_id: string) => {
-    const referral_code = localStorage.getItem("staking-program-referral-code") || "";
-
-    window.postMessage(
-      {
-        direction: "from-page-script",
-        message: { message: "delegate", pool_id: pool_id, referral_code: referral_code },
-      },
-      window.location.origin,
-    );
-
-    const browser = (window as any).chrome;
-
-    if (typeof browser !== "undefined") {
-      browser.runtime.sendMessage(extensionId, { message: "delegate", pool_id: pool_id, referral_code: referral_code }).then(
-        (reply: any) => {
-          // handle reply
-        },
-        (error: any) => {
-          // handle error
-          console.error(error.message);
-        },
-      );
-    }
+  const handleDelegate = async (pool_id: string) => {
+    const t = await client.delegationCreate({ pool_id: pool_id, destination: 'tmt1q9ujk3d8hfu6jhhnsrx0r2tes7t6teujt5xx3wxx' });
+    console.log('t', t);
   };
 
   const handleConnect = () => {
-    const event = new CustomEvent("InitWalletRequest");
-    window.dispatchEvent(event);
+    if (client) {
+      client.connect()
+        .then(async () => {
+          setDetected(true);
+          const delegationData = await client.getDelegations();
+          console.log('delegationData', delegationData);
+          setDelegations(delegationData);
+        })
+        .catch((error) => {
+          console.error("Error connecting to wallet:", error);
+        });
+    }
   };
 
   return {
@@ -55,5 +45,6 @@ export function useWallet() {
     balance,
     handleDelegate,
     handleConnect,
+    delegations,
   };
 }
