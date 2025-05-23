@@ -28,8 +28,6 @@ export default async function Pool() {
 
       <SaveToLocalStorage />
 
-      <WalletConnect />
-
       <div className="max-w-6xl w-full mx-auto my-8 px-5">
         <Table />
       </div>
