@@ -7,6 +7,8 @@ import { getCMCInfo } from "@/utils/exchange";
 
 export const dynamic = "force-dynamic";
 
+const ERC20_DATA_SERVER_URL = process.env.ER20_DATA_SERVER_URL || "https://token.api.mintlayer.org/api";
+
 export async function GET(request: Request) {
   const cachedData = cache.get("summary_data");
   if (cachedData) {
@@ -35,10 +37,10 @@ export async function GET(request: Request) {
   const req_circulating_supply_ml = await fetch("https://api-server.mintlayer.org/api/v2/statistics/coin");
   const circulating_supply_ml = await req_circulating_supply_ml.json();
 
-  const req_circulating_supply_erc20 = await fetch("https://token.api.mintlayer.org/api/circulatingerc");
+  const req_circulating_supply_erc20 = await fetch(ER20_DATA_SERVER_URL + "/circulatingerc");
   const circulating_supply_erc20 = await req_circulating_supply_erc20.text();
 
-  const req_total_supply_erc20 = await fetch("https://token.api.mintlayer.org/api/totalclaimed");
+  const req_total_supply_erc20 = await fetch(ER20_DATA_SERVER_URL + "/totalclaimed");
   const total_supply_erc20 = await req_total_supply_erc20.text();
 
   const req_staking = await fetch("https://explorer.mintlayer.org/api/pool/summary");
