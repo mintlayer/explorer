@@ -25,6 +25,44 @@ export function useWallet() {
     console.log('t', t);
   };
 
+  const handleWithdraw = async (delegation_id: string, amount: string, destination_address: string) => {
+    try {
+      if (!client) {
+        throw new Error("Wallet client not available");
+      }
+
+      // Note: This is a placeholder for the withdrawal functionality
+      // The actual SDK method might be different - this needs to be verified
+      const result = await client.delegationSendToAddress({
+        delegation_id,
+        amount,
+        destination: destination_address
+      });
+
+      console.log('Withdrawal result:', result);
+
+      // Refresh delegations after withdrawal
+      const updatedDelegations = await client.getDelegations();
+      setDelegations(updatedDelegations);
+
+      return result;
+    } catch (error) {
+      console.error("Error withdrawing from delegation:", error);
+      throw error;
+    }
+  };
+
+  const refreshDelegations = async () => {
+    try {
+      if (client && detected) {
+        const delegationData = await client.getDelegations();
+        setDelegations(delegationData);
+      }
+    } catch (error) {
+      console.error("Error refreshing delegations:", error);
+    }
+  };
+
   const handleConnect = () => {
     if (client) {
       client.connect()
@@ -44,7 +82,9 @@ export function useWallet() {
     detected,
     balance,
     handleDelegate,
+    handleWithdraw,
     handleConnect,
     delegations,
+    refreshDelegations,
   };
 }
