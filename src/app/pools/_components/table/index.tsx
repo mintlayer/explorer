@@ -326,8 +326,6 @@ export function Table() {
       return acc;
     }, {});
 
-    console.log('delegationsByPoolId', delegationsByPoolId);
-
     const poolDelegations = delegationsByPoolId[pool.pool_id] || [];
 
     return {
@@ -500,7 +498,7 @@ export function Table() {
                   placeholder="Enter amount to add"
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  Your available balance: {formatML(balance)} {coin}
+                  Your available balance: {formatML(balance.toString())} {coin}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   Current delegation balance: {formatML(selectedAddFundsDelegation.balance.decimal)} {coin}
