@@ -40,7 +40,8 @@ export function Table() {
   const [openWithdrawModal, setOpenWithdrawModal] = useState(false);
   const [withdrawPoolId, setWithdrawPoolId] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [withdrawDestination, setWithdrawDestination] = useState("");
+  const [selectedDelegation, setSelectedDelegation] = useState<any>(null);
+  const [poolDelegations, setPoolDelegations] = useState<any[]>([]);
 
   const apyCalculator = difficulty !== 0;
 
@@ -139,33 +140,49 @@ export function Table() {
     }
   };
 
-  const handleWithdrawPool = (poolId: string, maxAmount: number) => {
+  const handleWithdrawPool = (poolId: string, totalAmount: number) => {
+    // Find all delegations for this pool
+    const userPoolDelegations = delegations.filter(d => d.pool_id === poolId);
+
     setWithdrawPoolId(poolId);
-    setWithdrawAmount(maxAmount.toString());
-    setWithdrawDestination(""); // User will need to enter destination
+    setPoolDelegations(userPoolDelegations);
+    setSelectedDelegation(userPoolDelegations[0] || null); // Select first delegation by default
+    setWithdrawAmount(userPoolDelegations[0]?.balance?.decimal?.toString() || "0");
     setOpenWithdrawModal(true);
+  };
+
+  const handleDelegationSelect = (delegation: any) => {
+    setSelectedDelegation(delegation);
+    setWithdrawAmount(delegation.balance.decimal.toString());
   };
 
   const handleConfirmWithdraw = async () => {
     try {
-      if (!withdrawDestination.trim()) {
-        alert("Please enter a destination address");
+      if (!selectedDelegation) {
+        alert("Please select a delegation to withdraw from");
         return;
       }
 
-      // Find the delegation ID for this pool
-      const poolDelegations = delegations.filter(d => d.pool_id === withdrawPoolId);
-      if (poolDelegations.length === 0) {
-        alert("No delegations found for this pool");
+      if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+        alert("Please enter a valid withdrawal amount");
         return;
       }
 
-      // For simplicity, withdraw from the first delegation
-      // In a real implementation, you might want to let user choose which delegation
-      const delegationId = poolDelegations[0].delegation_id;
+      if (parseFloat(withdrawAmount) > parseFloat(selectedDelegation.balance.decimal)) {
+        alert("Withdrawal amount cannot exceed delegation balance");
+        return;
+      }
 
-      await handleWithdraw(delegationId, withdrawAmount, withdrawDestination);
+      // Use the delegation's spend_destination as the withdrawal destination
+      const destinationAddress = selectedDelegation.spend_destination;
+
+      await handleWithdraw(selectedDelegation.delegation_id, withdrawAmount, destinationAddress);
       setOpenWithdrawModal(false);
+
+      // Reset modal state
+      setSelectedDelegation(null);
+      setPoolDelegations([]);
+      setWithdrawAmount("");
 
       // Refresh the delegations data
       await refreshDelegations();
@@ -214,12 +231,16 @@ export function Table() {
 
     console.log('delegationsByPoolId', delegationsByPoolId);
 
+    const poolDelegations = delegationsByPoolId[pool.pool_id] || [];
+
     return {
       ...pool,
       delegation_exists: !!delegationsByPoolId[pool.pool_id],
-      delegation_balance: delegationsByPoolId[pool.pool_id]?.reduce((acc: any, delegation: any) => {
+      delegation_balance: poolDelegations.reduce((acc: any, delegation: any) => {
         return acc + parseFloat(delegation.balance.decimal);
       }, 0) || 0,
+      delegation_count: poolDelegations.length,
+      user_delegations: poolDelegations, // Store the actual delegation objects for detailed access
     }
   }
 
@@ -260,25 +281,59 @@ export function Table() {
           </p>
           <div className="flex flex-col gap-4 py-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Amount to withdraw ({coin})</label>
-              <input
-                type="text"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-100"
-                placeholder="Enter amount"
-              />
+              <label className="block text-sm font-medium mb-2">Select Delegation to Withdraw From</label>
+              <div className="space-y-2">
+                {poolDelegations.map((delegation, index) => (
+                  <div
+                    key={delegation.delegation_id}
+                    className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                      selectedDelegation?.delegation_id === delegation.delegation_id
+                        ? 'border-primary-100 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onClick={() => handleDelegationSelect(delegation)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className="font-mono text-sm">
+                          {delegation.delegation_id.slice(0, 20)}...{delegation.delegation_id.slice(-10)}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Destination: {delegation.spend_destination.slice(0, 15)}...{delegation.spend_destination.slice(-10)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">
+                          {formatML(delegation.balance.decimal)} {coin}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Available
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Destination Address</label>
-              <input
-                type="text"
-                value={withdrawDestination}
-                onChange={(e) => setWithdrawDestination(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-100"
-                placeholder="Enter destination address"
-              />
-            </div>
+            {selectedDelegation && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Amount to withdraw ({coin})</label>
+                <input
+                  type="text"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  placeholder="Enter amount"
+                  max={selectedDelegation.balance.decimal}
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Max available: {formatML(selectedDelegation.balance.decimal)} {coin}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Withdrawal destination: {selectedDelegation.spend_destination}
+                </div>
+              </div>
+            )}
           </div>
           <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
             <div
@@ -680,8 +735,13 @@ export function Table() {
                       <span className="md:hidden text-sm">Your Stake</span>
                       <div className="flex flex-col items-end">
                         {value?.delegation_balance > 0 ? (
-                          <div className="font-semibold text-primary-100">
-                            {formatML(value.delegation_balance)} {coin}
+                          <div>
+                            <div className="font-semibold text-primary-100">
+                              {formatML(value.delegation_balance)} {coin}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {value.delegation_count} delegation{value.delegation_count > 1 ? 's' : ''}
+                            </div>
                           </div>
                         ) : (
                           <div className="text-gray-400">-</div>
