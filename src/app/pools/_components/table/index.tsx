@@ -22,7 +22,7 @@ import {WalletConnect} from "@/app/_components/wallet_connect";
 const coin = getCoin();
 
 export function Table() {
-  const { detected, delegations, handleConnect, handleDelegate, handleWithdraw, refreshDelegations } = useWallet();
+  const { detected, delegations, balance, handleConnect, handleDelegate, handleAddFunds, handleWithdraw, refreshDelegations } = useWallet();
   const [pools, setPools] = useState<any>([]);
   const [orderField, setOrderField] = useState<any>("pool_id");
   const [blockHeight, setBlockHeight] = useState<any>(0);
@@ -42,6 +42,13 @@ export function Table() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [selectedDelegation, setSelectedDelegation] = useState<any>(null);
   const [poolDelegations, setPoolDelegations] = useState<any[]>([]);
+
+  // Add funds modal state
+  const [openAddFundsModal, setOpenAddFundsModal] = useState(false);
+  const [addFundsPoolId, setAddFundsPoolId] = useState("");
+  const [addFundsAmount, setAddFundsAmount] = useState("");
+  const [selectedAddFundsDelegation, setSelectedAddFundsDelegation] = useState<any>(null);
+  const [addFundsPoolDelegations, setAddFundsPoolDelegations] = useState<any[]>([]);
 
   const apyCalculator = difficulty !== 0;
 
@@ -131,12 +138,18 @@ export function Table() {
     }, 1000);
   };
 
-  const handleStackPool = (balance: number, poolId: string) => {
-    if (balance > 600000) {
-      setOpenModal(true);
-      setPoolId(poolId);
+  const handleStackPool = (poolBalance: number, poolId: string, hasExistingDelegation: boolean) => {
+    if (hasExistingDelegation) {
+      // If user has existing delegations, show add funds modal
+      handleAddFundsPool(poolId);
     } else {
-      handleDelegate(poolId);
+      // If no existing delegations, create new delegation
+      if (poolBalance > 600000) {
+        setOpenModal(true);
+        setPoolId(poolId);
+      } else {
+        handleDelegate(poolId);
+      }
     }
   };
 
@@ -190,6 +203,55 @@ export function Table() {
     } catch (error) {
       console.error("Withdrawal failed:", error);
       alert("Withdrawal failed. Please try again.");
+    }
+  };
+
+  const handleAddFundsPool = (poolId: string) => {
+    // Find all delegations for this pool
+    const userPoolDelegations = delegations.filter(d => d.pool_id === poolId);
+
+    setAddFundsPoolId(poolId);
+    setAddFundsPoolDelegations(userPoolDelegations);
+    setSelectedAddFundsDelegation(userPoolDelegations[0] || null); // Select first delegation by default
+    setAddFundsAmount("");
+    setOpenAddFundsModal(true);
+  };
+
+  const handleAddFundsDelegationSelect = (delegation: any) => {
+    setSelectedAddFundsDelegation(delegation);
+  };
+
+  const handleConfirmAddFunds = async () => {
+    try {
+      if (!selectedAddFundsDelegation) {
+        alert("Please select a delegation to add funds to");
+        return;
+      }
+
+      if (!addFundsAmount || parseFloat(addFundsAmount) <= 0) {
+        alert("Please enter a valid amount to add");
+        return;
+      }
+
+      if (parseFloat(addFundsAmount) > balance) {
+        alert("Amount cannot exceed your available balance");
+        return;
+      }
+
+      await handleAddFunds(selectedAddFundsDelegation.delegation_id, addFundsAmount);
+      setOpenAddFundsModal(false);
+
+      // Reset modal state
+      setSelectedAddFundsDelegation(null);
+      setAddFundsPoolDelegations([]);
+      setAddFundsAmount("");
+
+      // Refresh the delegations data
+      await refreshDelegations();
+
+    } catch (error) {
+      console.error("Add funds failed:", error);
+      alert("Add funds failed. Please try again.");
     }
   };
 
@@ -343,6 +405,81 @@ export function Table() {
               Confirm Withdrawal
             </div>
             <div className="cursor-pointer p-2 rounded bg-gray-400 text-white" onClick={() => setOpenWithdrawModal(false)}>
+              Cancel
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {openAddFundsModal && (
+        <Modal active={openAddFundsModal} setActive={setOpenAddFundsModal}>
+          <div className="text-xl font-semibold w-full">Add Funds to Delegation</div>
+          <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
+            You are about to add funds to your existing delegation. Select which delegation to add funds to and specify the amount.
+          </p>
+          <div className="flex flex-col gap-4 py-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Delegation to Add Funds To</label>
+              <div className="space-y-2">
+                {addFundsPoolDelegations.map((delegation, index) => (
+                  <div
+                    key={delegation.delegation_id}
+                    className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                      selectedAddFundsDelegation?.delegation_id === delegation.delegation_id
+                        ? 'border-primary-100 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onClick={() => handleAddFundsDelegationSelect(delegation)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className="font-mono text-sm">
+                          {delegation.delegation_id.slice(0, 20)}...{delegation.delegation_id.slice(-10)}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Destination: {delegation.spend_destination.slice(0, 15)}...{delegation.spend_destination.slice(-10)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">
+                          {formatML(delegation.balance.decimal)} {coin}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Current Balance
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {selectedAddFundsDelegation && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Amount to add ({coin})</label>
+                <input
+                  type="text"
+                  value={addFundsAmount}
+                  onChange={(e) => setAddFundsAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  placeholder="Enter amount to add"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Your available balance: {formatML(balance)} {coin}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Current delegation balance: {formatML(selectedAddFundsDelegation.balance.decimal)} {coin}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
+            <div
+              className="cursor-pointer p-2 rounded bg-primary-100 text-white"
+              onClick={handleConfirmAddFunds}
+            >
+              Add Funds
+            </div>
+            <div className="cursor-pointer p-2 rounded bg-gray-400 text-white" onClick={() => setOpenAddFundsModal(false)}>
               Cancel
             </div>
           </div>
@@ -606,6 +743,15 @@ export function Table() {
                 <tr key={"s" + i} className={`grid grid-cols-5 gap-0 h-full ${detected && value.delegation_exists ? 'bg-blue-50 border-blue-200' : 'bg-white'} hover:bg-gray-50 group border mb-3 md:table-row`}>
                   <td className="col-start-1 col-end-6 row-start-1 row-end-2 px-2 py-2 font-mono hover:text-primary-100 w-full">
                     <div className="flex items-center gap-2">
+                      {detected && value.delegation_exists && (
+                        <span
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                          data-tooltip-id="tooltip"
+                          data-tooltip-content={`You have ${value.delegation_count} delegation${value.delegation_count > 1 ? 's' : ''} in this pool`}
+                        >
+                          My Pool ({value.delegation_count})
+                        </span>
+                      )}
                       <Link href={"/pool/" + value.pool_id}>
                         {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}
                       </Link>
@@ -754,9 +900,9 @@ export function Table() {
                       <div className="flex flex-col gap-1">
                         <button
                           data-tooltip-id="tooltip"
-                          data-tooltip-content="Stake to this pool"
+                          data-tooltip-content={value?.delegation_exists ? "Add funds to existing delegation" : "Create new delegation in this pool"}
                           className="bg-primary-100 hover:bg-primary-110 px-2 py-1 text-white rounded text-sm"
-                          onClick={() => handleStackPool(value.balance, value.pool_id)}
+                          onClick={() => handleStackPool(value.balance, value.pool_id, value?.delegation_exists)}
                         >
                           {value?.delegation_exists ? 'Add Coins' : 'Join'}
                         </button>
