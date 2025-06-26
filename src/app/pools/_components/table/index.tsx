@@ -50,6 +50,10 @@ export function Table() {
   const [selectedAddFundsDelegation, setSelectedAddFundsDelegation] = useState<any>(null);
   const [addFundsPoolDelegations, setAddFundsPoolDelegations] = useState<any[]>([]);
 
+  // Join modal state
+  const [openJoinModal, setOpenJoinModal] = useState(false);
+  const [joinPoolData, setJoinPoolData] = useState<any>(null);
+
   const apyCalculator = difficulty !== 0;
 
   const stakingAmount = parseFloat(stakingAmountRaw.replace(/[^0-9.]/g, "")) || 0;
@@ -138,18 +142,49 @@ export function Table() {
     }, 1000);
   };
 
-  const handleStackPool = (poolBalance: number, poolId: string, hasExistingDelegation: boolean) => {
+  const handleStackPool = (poolBalance: number, poolId: string, hasExistingDelegation: boolean, poolData: any) => {
     if (hasExistingDelegation) {
       // If user has existing delegations, show add funds modal
       handleAddFundsPool(poolId);
     } else {
-      // If no existing delegations, create new delegation
-      if (poolBalance > 600000) {
-        setOpenModal(true);
-        setPoolId(poolId);
-      } else {
-        handleDelegate(poolId);
+      // If no existing delegations, show join modal for confirmation
+      handleJoinPool(poolData);
+    }
+  };
+
+  const handleJoinPool = (poolData: any) => {
+    setJoinPoolData(poolData);
+    setOpenJoinModal(true);
+  };
+
+  const handleConfirmJoin = async () => {
+    try {
+      if (!joinPoolData) {
+        alert("Pool data not available");
+        return;
       }
+
+      // Check if pool is oversaturated and show warning
+      if (joinPoolData.balance > 600000) {
+        setOpenJoinModal(false);
+        setOpenModal(true);
+        setPoolId(joinPoolData.pool_id);
+        return;
+      }
+
+      // Create new delegation
+      await handleDelegate(joinPoolData.pool_id);
+      setOpenJoinModal(false);
+
+      // Reset modal state
+      setJoinPoolData(null);
+
+      // Refresh the delegations data
+      await refreshDelegations();
+
+    } catch (error) {
+      console.error("Join pool failed:", error);
+      alert("Failed to join pool. Please try again.");
     }
   };
 
@@ -312,21 +347,22 @@ export function Table() {
 
       {openModal && (
         <Modal active={openModal} setActive={setOpenModal}>
-          <div className="text-xl font-semibold w-full">Delegating to a pool that has reached saturation</div>
+          <div className="text-xl font-semibold w-full">Joining a pool that has reached saturation</div>
           <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
-            Delegating to a pool that has reached saturation is not recommended. Contributions to a saturated pool will have a minimal impact on the pool’s
-            effective balance, potentially diminishing the rewards you might expect. Please consider delegating to a less populated pool to optimize your
+            This pool has reached saturation (over 600,000 {coin}). Joining a saturated pool is not recommended as contributions will have minimal impact on the pool’s
+            effective balance, potentially diminishing the rewards you might expect. Please consider joining a less populated pool to optimize your
             delegation benefits.
           </p>
           <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
             <div
-              className="cursor-pointer p-2 rounded bg-base-gray40 text-white"
+              className="cursor-pointer p-2 rounded bg-orange-500 text-white"
               onClick={() => {
                 setOpenModal(false);
                 handleDelegate(poolId);
+                refreshDelegations();
               }}
             >
-              Stake Anyway
+              Join Anyway
             </div>
             <div className="cursor-pointer p-2 rounded bg-primary-100 text-white" onClick={() => setOpenModal(false)}>
               Cancel
@@ -480,6 +516,105 @@ export function Table() {
               Add Funds
             </div>
             <div className="cursor-pointer p-2 rounded bg-gray-400 text-white" onClick={() => setOpenAddFundsModal(false)}>
+              Cancel
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {openJoinModal && joinPoolData && (
+        <Modal active={openJoinModal} setActive={setOpenJoinModal}>
+          <div className="text-xl font-semibold w-full">Join Pool</div>
+          <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
+            You are about to create a new delegation to this pool. This will create an empty delegation that you can add funds to later.
+          </p>
+
+          <div className="flex flex-col gap-4 py-4">
+            {/* Pool Summary */}
+            <div className="bg-gray-50 p-4 rounded-md">
+              <h3 className="font-semibold mb-3">Pool Summary</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-600">Pool ID:</span>
+                  <div className="font-mono text-xs mt-1">
+                    {joinPoolData.pool_id.slice(0, 20)}...{joinPoolData.pool_id.slice(-15)}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Total Balance:</span>
+                  <div className="font-semibold mt-1">
+                    {formatML(joinPoolData.balance, 0)} {coin}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Cost per Block:</span>
+                  <div className="font-semibold mt-1">
+                    {joinPoolData.cost_per_block} {coin}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Margin Ratio:</span>
+                  <div className="font-semibold mt-1">
+                    {(joinPoolData.margin_ratio * 100).toFixed(1)}%
+                  </div>
+                </div>
+                {apyCalculator && stakingAmount > 0 && (
+                  <>
+                    <div>
+                      <span className="text-gray-600">Estimated APY:</span>
+                      <div className="font-semibold mt-1 text-primary-100">
+                        {joinPoolData.apy?.toFixed(2)}%
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Est. Daily Reward:</span>
+                      <div className="font-semibold mt-1 text-primary-100">
+                        {joinPoolData.reward_per_day_delegator?.toFixed(2)} {coin}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Transaction Fee Info */}
+            <div className="bg-blue-50 p-4 rounded-md">
+              <h3 className="font-semibold mb-2 text-blue-800">Transaction Information</h3>
+              <div className="text-sm text-blue-700">
+                <div className="mb-2">
+                  <span className="font-medium">Transaction Fee:</span> Network fee will be deducted from your balance
+                </div>
+                <div className="mb-2">
+                  <span className="font-medium">Delegation Creation:</span> This creates an empty delegation
+                </div>
+              </div>
+            </div>
+
+            {/* Next Steps Info */}
+            <div className="bg-yellow-50 p-4 rounded-md">
+              <h3 className="font-semibold mb-2 text-yellow-800">Next Steps</h3>
+              <div className="text-sm text-yellow-700">
+                <div className="mb-2">
+                  1. After joining, you'll need to add funds to your delegation to start earning rewards
+                </div>
+                <div className="mb-2">
+                  2. Use the "Add Coins" button to fund your delegation
+                </div>
+                <div>
+                  3. Your delegation will start earning rewards once funded
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
+            <div
+              className="cursor-pointer p-2 rounded bg-primary-100 text-white"
+              onClick={handleConfirmJoin}
+            >
+              Confirm & Join Pool
+            </div>
+            <div className="cursor-pointer p-2 rounded bg-gray-400 text-white" onClick={() => setOpenJoinModal(false)}>
               Cancel
             </div>
           </div>
@@ -902,7 +1037,7 @@ export function Table() {
                           data-tooltip-id="tooltip"
                           data-tooltip-content={value?.delegation_exists ? "Add funds to existing delegation" : "Create new delegation in this pool"}
                           className="bg-primary-100 hover:bg-primary-110 px-2 py-1 text-white rounded text-sm"
-                          onClick={() => handleStackPool(value.balance, value.pool_id, value?.delegation_exists)}
+                          onClick={() => handleStackPool(value.balance, value.pool_id, value?.delegation_exists, value)}
                         >
                           {value?.delegation_exists ? 'Add Coins' : 'Join'}
                         </button>
