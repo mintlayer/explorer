@@ -21,8 +21,9 @@ export function useWallet() {
   }, []);
 
   const handleDelegate = async (pool_id: string) => {
-    const t = await client.delegationCreate({ pool_id: pool_id, destination: 'tmt1q9ujk3d8hfu6jhhnsrx0r2tes7t6teujt5xx3wxx' });
-    console.log('t', t);
+    const destination = await client.getAddresses();
+    const t = await client.delegationCreate({ pool_id: pool_id, destination: destination?.receiving[0] });
+    return t;
   };
 
   const handleAddFunds = async (delegation_id: string, amount: string) => {
@@ -35,7 +36,7 @@ export function useWallet() {
       // The actual SDK method might be delegationStake or similar
       const result = await client.delegationStake({
         delegation_id,
-        amount
+        amount: parseFloat(amount),
       });
 
       console.log('Add funds result:', result);
@@ -45,7 +46,7 @@ export function useWallet() {
       setDelegations(updatedDelegations);
 
       const updatedBalance = await client.getBalance();
-      setBalance(parseFloat(updatedBalance.decimal) || 0);
+      setBalance(parseFloat(updatedBalance.toString()) || 0);
 
       return result;
     } catch (error) {
@@ -62,10 +63,9 @@ export function useWallet() {
 
       // Note: This is a placeholder for the withdrawal functionality
       // The actual SDK method might be different - this needs to be verified
-      const result = await client.delegationSendToAddress({
+      const result = await client.delegationWithdraw({
         delegation_id,
-        amount,
-        destination: destination_address
+        amount: parseFloat(amount),
       });
 
       console.log('Withdrawal result:', result);
@@ -89,7 +89,7 @@ export function useWallet() {
 
         // Also refresh balance
         const balanceData = await client.getBalance();
-        setBalance(parseFloat(balanceData.decimal) || 0);
+        setBalance(parseFloat(balanceData.toString()) || 0);
       }
     } catch (error) {
       console.error("Error refreshing delegations:", error);
@@ -102,14 +102,12 @@ export function useWallet() {
         .then(async () => {
           setDetected(true);
           const delegationData = await client.getDelegations();
-          console.log('delegationData', delegationData);
           setDelegations(delegationData);
 
           // Fetch wallet balance
           try {
             const balanceData = await client.getBalance();
-            console.log('balanceData', balanceData);
-            setBalance(parseFloat(balanceData.decimal) || 0);
+            setBalance(parseFloat(balanceData.toString()) || 0);
           } catch (error) {
             console.error("Error fetching balance:", error);
           }
