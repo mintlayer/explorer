@@ -876,15 +876,6 @@ export function Table() {
                 <tr key={"s" + i} className={`grid grid-cols-5 gap-0 h-full ${detected && value.delegation_exists ? 'bg-blue-50 border-blue-200' : 'bg-white'} hover:bg-gray-50 group border mb-3 md:table-row`}>
                   <td className="col-start-1 col-end-6 row-start-1 row-end-2 px-2 py-2 font-mono hover:text-primary-100 w-full">
                     <div className="flex items-center gap-2">
-                      {detected && value.delegation_exists && (
-                        <span
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                          data-tooltip-id="tooltip"
-                          data-tooltip-content={`You have ${value.delegation_count} delegation${value.delegation_count > 1 ? 's' : ''} in this pool`}
-                        >
-                          My Pool ({value.delegation_count})
-                        </span>
-                      )}
                       <Link href={"/pool/" + value.pool_id}>
                         {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}
                       </Link>
