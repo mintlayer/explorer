@@ -25,6 +25,35 @@ export function useWallet() {
     console.log('t', t);
   };
 
+  const handleAddFunds = async (delegation_id: string, amount: string) => {
+    try {
+      if (!client) {
+        throw new Error("Wallet client not available");
+      }
+
+      // Note: This is a placeholder for the add funds functionality
+      // The actual SDK method might be delegationStake or similar
+      const result = await client.delegationStake({
+        delegation_id,
+        amount
+      });
+
+      console.log('Add funds result:', result);
+
+      // Refresh delegations and balance after adding funds
+      const updatedDelegations = await client.getDelegations();
+      setDelegations(updatedDelegations);
+
+      const updatedBalance = await client.getBalance();
+      setBalance(parseFloat(updatedBalance.decimal) || 0);
+
+      return result;
+    } catch (error) {
+      console.error("Error adding funds to delegation:", error);
+      throw error;
+    }
+  };
+
   const handleWithdraw = async (delegation_id: string, amount: string, destination_address: string) => {
     try {
       if (!client) {
@@ -57,6 +86,10 @@ export function useWallet() {
       if (client && detected) {
         const delegationData = await client.getDelegations();
         setDelegations(delegationData);
+
+        // Also refresh balance
+        const balanceData = await client.getBalance();
+        setBalance(parseFloat(balanceData.decimal) || 0);
       }
     } catch (error) {
       console.error("Error refreshing delegations:", error);
@@ -71,6 +104,15 @@ export function useWallet() {
           const delegationData = await client.getDelegations();
           console.log('delegationData', delegationData);
           setDelegations(delegationData);
+
+          // Fetch wallet balance
+          try {
+            const balanceData = await client.getBalance();
+            console.log('balanceData', balanceData);
+            setBalance(parseFloat(balanceData.decimal) || 0);
+          } catch (error) {
+            console.error("Error fetching balance:", error);
+          }
         })
         .catch((error) => {
           console.error("Error connecting to wallet:", error);
@@ -82,6 +124,7 @@ export function useWallet() {
     detected,
     balance,
     handleDelegate,
+    handleAddFunds,
     handleWithdraw,
     handleConnect,
     delegations,
