@@ -22,18 +22,25 @@ import {WalletConnect} from "@/app/_components/wallet_connect";
 const coin = getCoin();
 
 export function Table() {
-  const { detected, delegations, handleConnect, handleDelegate } = useWallet();
+  const { detected, delegations, handleConnect, handleDelegate, handleWithdraw, refreshDelegations } = useWallet();
   const [pools, setPools] = useState<any>([]);
   const [orderField, setOrderField] = useState<any>("pool_id");
   const [blockHeight, setBlockHeight] = useState<any>(0);
   const [order, setOrder] = useState<any>("asc");
   const [difficulty, setDifficulty] = useState<any>(0);
   const [hideNonProfitPools, setHideNonProfitPools] = useState<any>(true);
+  const [showOnlyMyPools, setShowOnlyMyPools] = useState<any>(false);
   const [stakingAmountRaw, setStakingAmount] = useState<any>("1000");
   const [copy, setCopy] = useState<any>({});
 
   const [openModal, setOpenModal] = useState(false);
   const [poolId, setPoolId] = useState("");
+
+  // Withdrawal modal state
+  const [openWithdrawModal, setOpenWithdrawModal] = useState(false);
+  const [withdrawPoolId, setWithdrawPoolId] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawDestination, setWithdrawDestination] = useState("");
 
   const apyCalculator = difficulty !== 0;
 
@@ -62,8 +69,30 @@ export function Table() {
     getDifficulty();
   }, []);
 
-  // sorter for number fields
+  // Enhanced sorter for number fields and delegation-based sorting
   const sorter = (a: any, b: any) => {
+    // Special handling for delegation-based sorting
+    if (orderField === "delegation_exists") {
+      const aHasDelegation = a.delegation_exists ? 1 : 0;
+      const bHasDelegation = b.delegation_exists ? 1 : 0;
+      if (order === "asc") {
+        return aHasDelegation - bHasDelegation;
+      } else {
+        return bHasDelegation - aHasDelegation;
+      }
+    }
+
+    if (orderField === "delegation_balance") {
+      const aBalance = a.delegation_balance || 0;
+      const bBalance = b.delegation_balance || 0;
+      if (order === "asc") {
+        return aBalance - bBalance;
+      } else {
+        return bBalance - aBalance;
+      }
+    }
+
+    // Default numeric sorting
     if (order === "asc") {
       return a[orderField] - b[orderField];
     } else {
@@ -72,13 +101,18 @@ export function Table() {
   };
 
   const filterer = (item: any) => {
+    // Filter by non-profit pools
     if (hideNonProfitPools) {
       if (item.margin_ratio === 1) return false;
       if (item.cost_per_block >= block_subsidy_at_height(blockHeight)) return false;
-      return true;
-    } else {
-      return true;
     }
+
+    // Filter to show only pools where user has delegations
+    if (showOnlyMyPools && detected) {
+      if (!item.delegation_exists) return false;
+    }
+
+    return true;
   };
 
   const handleSort =
@@ -102,6 +136,43 @@ export function Table() {
       setPoolId(poolId);
     } else {
       handleDelegate(poolId);
+    }
+  };
+
+  const handleWithdrawPool = (poolId: string, maxAmount: number) => {
+    setWithdrawPoolId(poolId);
+    setWithdrawAmount(maxAmount.toString());
+    setWithdrawDestination(""); // User will need to enter destination
+    setOpenWithdrawModal(true);
+  };
+
+  const handleConfirmWithdraw = async () => {
+    try {
+      if (!withdrawDestination.trim()) {
+        alert("Please enter a destination address");
+        return;
+      }
+
+      // Find the delegation ID for this pool
+      const poolDelegations = delegations.filter(d => d.pool_id === withdrawPoolId);
+      if (poolDelegations.length === 0) {
+        alert("No delegations found for this pool");
+        return;
+      }
+
+      // For simplicity, withdraw from the first delegation
+      // In a real implementation, you might want to let user choose which delegation
+      const delegationId = poolDelegations[0].delegation_id;
+
+      await handleWithdraw(delegationId, withdrawAmount, withdrawDestination);
+      setOpenWithdrawModal(false);
+
+      // Refresh the delegations data
+      await refreshDelegations();
+
+    } catch (error) {
+      console.error("Withdrawal failed:", error);
+      alert("Withdrawal failed. Please try again.");
     }
   };
 
@@ -181,6 +252,48 @@ export function Table() {
         </Modal>
       )}
 
+      {openWithdrawModal && (
+        <Modal active={openWithdrawModal} setActive={setOpenWithdrawModal}>
+          <div className="text-xl font-semibold w-full">Withdraw from Pool</div>
+          <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
+            You are about to withdraw from your delegation. Please note that withdrawn coins will have a 7200-block maturity period (approximately 10 days) before they become available.
+          </p>
+          <div className="flex flex-col gap-4 py-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Amount to withdraw ({coin})</label>
+              <input
+                type="text"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-100"
+                placeholder="Enter amount"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Destination Address</label>
+              <input
+                type="text"
+                value={withdrawDestination}
+                onChange={(e) => setWithdrawDestination(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-100"
+                placeholder="Enter destination address"
+              />
+            </div>
+          </div>
+          <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
+            <div
+              className="cursor-pointer p-2 rounded bg-red-500 text-white"
+              onClick={handleConfirmWithdraw}
+            >
+              Confirm Withdrawal
+            </div>
+            <div className="cursor-pointer p-2 rounded bg-gray-400 text-white" onClick={() => setOpenWithdrawModal(false)}>
+              Cancel
+            </div>
+          </div>
+        </Modal>
+      )}
+
       <div className="md:hidden">
         <div className="flex flex-row">
           <div className="w-5 flex justify-center items-center mr-2">
@@ -204,11 +317,17 @@ export function Table() {
 
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="mt-3">
-          <div>
+          <div className="flex flex-col gap-2">
             <div className="flex flex-row items-center gap-2">
               <Switch checked={hideNonProfitPools} onChange={() => setHideNonProfitPools(!hideNonProfitPools)} />
               Hide pools that do not provide any rewards to delegators
             </div>
+            {detected && (
+              <div className="flex flex-row items-center gap-2">
+                <Switch checked={showOnlyMyPools} onChange={() => setShowOnlyMyPools(!showOnlyMyPools)} />
+                Show only pools where I have delegations
+              </div>
+            )}
           </div>
         </div>
 
@@ -234,6 +353,10 @@ export function Table() {
             { field: "apy", label: "APY" },
             { field: "reward_per_day_delegator", label: "Reward" },
             { field: "balance", label: "Pool Balance" },
+            ...(detected ? [
+              { field: "delegation_exists", label: "My Pools" },
+              { field: "delegation_balance", label: "My Stake" },
+            ] : []),
           ].map(({ field, label }) => {
             return (
               <button
@@ -389,7 +512,30 @@ export function Table() {
                 Total Balance
               </span>
             </th>
-            <th></th>
+            {detected && (
+              <th className="px-2 py-2 text-right">
+                <span
+                  onClick={handleSort("delegation_balance", "asc")}
+                  data-tooltip-id="tooltip"
+                  data-tooltip-content={`Sort ascending`}
+                  className="cursor-pointer font-normal"
+                >
+                  ↑
+                </span>
+                <span
+                  onClick={handleSort("delegation_balance", "desc")}
+                  data-tooltip-id="tooltip"
+                  data-tooltip-content={`Sort descending`}
+                  className="cursor-pointer font-normal"
+                >
+                  ↓
+                </span>
+                <span data-tooltip-id="tooltip" data-tooltip-content={`Your stake in this pool`}>
+                  Your Stake
+                </span>
+              </th>
+            )}
+            {detected && <th></th>}
           </tr>
         </thead>
         <tbody className="flex flex-col md:table-row-group">
@@ -402,20 +548,21 @@ export function Table() {
               const { apy, reward_per_day_pool, reward_per_day_delegator, part_label, hours_for_block } = value;
 
               return (
-                <tr key={"s" + i} className={`grid grid-cols-5 gap-0 h-full bg-white hover:bg-white group border mb-3 md:table-row`}>
+                <tr key={"s" + i} className={`grid grid-cols-5 gap-0 h-full ${detected && value.delegation_exists ? 'bg-blue-50 border-blue-200' : 'bg-white'} hover:bg-gray-50 group border mb-3 md:table-row`}>
                   <td className="col-start-1 col-end-6 row-start-1 row-end-2 px-2 py-2 font-mono hover:text-primary-100 w-full">
-                    <Link href={"/pool/" + value.pool_id}>
-                      {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}
-                    </Link>
-
-                    <span
-                      className="cursor-pointer md:opacity-5 group-hover:opacity-100"
-                      data-tooltip-id="tooltip"
-                      data-tooltip-content={copy[value.pool_id] ? "Copied" : "Click to copy pool address"}
-                      onClick={handleCopy(value.pool_id)}
-                    >
-                      <Image className="inline ml-2" src={copy_icon} alt="" />
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <Link href={"/pool/" + value.pool_id}>
+                        {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}
+                      </Link>
+                      <span
+                        className="cursor-pointer md:opacity-5 group-hover:opacity-100"
+                        data-tooltip-id="tooltip"
+                        data-tooltip-content={copy[value.pool_id] ? "Copied" : "Click to copy pool address"}
+                        onClick={handleCopy(value.pool_id)}
+                      >
+                        <Image className="inline" src={copy_icon} alt="" />
+                      </span>
+                    </div>
                   </td>
                   {apyCalculator && stakingAmount > 0 ? (
                     <td className="col-start-1 col-end-3 row-start-2 row-end-3 md:border-l px-2 py-2 text-right tabular-nums  hidden md:table-cell">
@@ -528,26 +675,44 @@ export function Table() {
                       </span>
                     </div>
                   </td>
-                  <td className="border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
-                    <button
-                      data-tooltip-id="tooltip"
-                      data-tooltip-content={detected ? "Stake to this pool" : "Connect wallet to stake"}
-                      disabled={!detected}
-                      className={`${detected ? "bg-primary-100 hover:bg-primary-110" : "bg-secondary-100"} px-2 py-1 text-white rounded`}
-                      onClick={() => handleStackPool(value.balance, value.pool_id)}
-                    >
-                      {value?.delegation_exists ? 'Add Coins' : 'Join'}
-                    </button>
-                    {value?.delegation_balance > 0 ? (
-                      <div
-                        className="cursor-pointer ml-2"
-                        data-tooltip-id="tooltip"
-                        data-tooltip-content={`You have ${formatML(value.delegation_balance)} ${coin} in this pool`}
-                      >
-                        <Image className="inline" src={icon_coin} alt="" />
+                  {detected && (
+                    <td className="border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
+                      <span className="md:hidden text-sm">Your Stake</span>
+                      <div className="flex flex-col items-end">
+                        {value?.delegation_balance > 0 ? (
+                          <div className="font-semibold text-primary-100">
+                            {formatML(value.delegation_balance)} {coin}
+                          </div>
+                        ) : (
+                          <div className="text-gray-400">-</div>
+                        )}
                       </div>
-                    ) : <></>}
-                  </td>
+                    </td>
+                  )}
+                  {detected && (
+                    <td className="border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
+                      <div className="flex flex-col gap-1">
+                        <button
+                          data-tooltip-id="tooltip"
+                          data-tooltip-content="Stake to this pool"
+                          className="bg-primary-100 hover:bg-primary-110 px-2 py-1 text-white rounded text-sm"
+                          onClick={() => handleStackPool(value.balance, value.pool_id)}
+                        >
+                          {value?.delegation_exists ? 'Add Coins' : 'Join'}
+                        </button>
+                        {value?.delegation_balance > 0 && (
+                          <button
+                            data-tooltip-id="tooltip"
+                            data-tooltip-content="Withdraw from this pool"
+                            className="bg-red-500 hover:bg-red-600 px-2 py-1 text-white rounded text-sm"
+                            onClick={() => handleWithdrawPool(value.pool_id, value.delegation_balance)}
+                          >
+                            Withdraw
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
