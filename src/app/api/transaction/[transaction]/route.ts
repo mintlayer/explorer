@@ -37,16 +37,24 @@ export async function GET(request: Request, { params }: { params: { transaction:
   const data = await getTransaction(NODE_API_URL);
 
   if (data.source && data.source === 'mempool') {
+    // get block height
+    const chain_tip = await fetch(NODE_API_URL + "/chain/tip", {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const chain_tip_data = await chain_tip.json();
+    const { block_height } = chain_tip_data;
+
     return NextResponse.json({
       ...data,
-      timestamp: Math.floor(Date.now() / 1000),
       id: data.tx_id,
       hash: data.tx_id,
       confirmations: 0,
       used_tokens: [],
       inputs: [],
       outputs: [],
-      block_height: 503000,
+      block_height: parseInt(block_height) + 1,
       version_byte: 1,
       fee: data.transaction.length / 2 / 1000, // half of hex length in kb
       amount: 0,
