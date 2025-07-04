@@ -82,7 +82,7 @@ export default async function Tx({ params }: { params: { tx: string } }) {
     return <NotFound title={"Transaction not found"} subtitle={"Transaction found in another network"} id={tx} linkUrl={`/tx/${tx}`} />;
   }
 
-  if (data.inputs.length === 0 && data.outputs.length === 0) {
+  if (data.status && data.status === 'accepted') {
     return (
       <>
         <Hero>
@@ -112,22 +112,18 @@ export default async function Tx({ params }: { params: { tx: string } }) {
                       },
                     ]),
                     {
-                      title: "Block",
-                      value: <span className="text-primary-100 font-bold text-base">{data.block_height}</span>,
+                      title: "Block to include",
+                      value: <span className="text-primary-100 font-bold text-base">#{data.block_height}</span>,
                       icon: icon_block,
                       iconTooltip: "Block",
                       link: `/block/${data.block_height}`,
                     },
-                    ...(data.timestamp === "" && data.confirmations === 0
-                      ? [
-                        {
-                          title: "Status",
-                          value: "Unconfirmed",
-                          icon: icon_time,
-                          iconTooltip: "Status",
-                        },
-                      ]
-                      : []),
+                    {
+                      title: "Status",
+                      value: "Unconfirmed",
+                      icon: icon_time,
+                      iconTooltip: "Status",
+                    },
                     {
                       title: "Version",
                       value: data.version_byte,
@@ -140,7 +136,7 @@ export default async function Tx({ params }: { params: { tx: string } }) {
               <div className="md:col-span-2 grid md:grid-cols-1 grid-cols-1 grid-rows-2 gap-4 md:-ml-20">
                 <div>
                   <HeadingBox
-                    title={data.confirmations <= 10 ? `${data.confirmations}/10 blocks` : `${data.confirmations} blocks`}
+                    title={'Unconfirmed'}
                     subtitle="Confirmation status"
                     icon={<Icon src={icon_transactions} />}
                     progress={[data.confirmations, 10]}
@@ -159,6 +155,7 @@ export default async function Tx({ params }: { params: { tx: string } }) {
             </div>
           </div>
         </Hero>
+        <Io data={{ inputs: data.inputs, outputs: data.outputs }} tokens={tokens} />
       </>
     );
   }

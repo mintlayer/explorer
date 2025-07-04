@@ -52,8 +52,8 @@ export async function GET(request: Request, { params }: { params: { transaction:
       hash: data.tx_id,
       confirmations: 0,
       used_tokens: [],
-      inputs: [],
-      outputs: [],
+      inputs: data.metadata && data.metadata.inputs ? data.metadata.inputs : [],
+      outputs: data.metadata && data.metadata.outputs ? data.metadata.outputs : [],
       block_height: parseInt(block_height) + 1,
       version_byte: 1,
       fee: data.transaction.length / 2 / 1000, // half of hex length in kb
