@@ -36,7 +36,7 @@ export async function GET(request: Request, { params }: { params: { transaction:
 
   const data = await getTransaction(NODE_API_URL);
 
-  if (data.source === 'mempool') {
+  if (data.source && data.source === 'mempool') {
     return NextResponse.json({
       ...data,
       timestamp: Math.floor(Date.now() / 1000),
@@ -46,9 +46,9 @@ export async function GET(request: Request, { params }: { params: { transaction:
       used_tokens: [],
       inputs: [],
       outputs: [],
-      block_height: '~123123',
+      block_height: 503000,
       version_byte: 1,
-      fee: data.transaction.length / 2 / 1000,
+      fee: data.transaction.length / 2 / 1000, // half of hex length in kb
       amount: 0,
     }, { status: 200 });
   }
