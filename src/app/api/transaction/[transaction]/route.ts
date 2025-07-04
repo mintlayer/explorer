@@ -36,6 +36,23 @@ export async function GET(request: Request, { params }: { params: { transaction:
 
   const data = await getTransaction(NODE_API_URL);
 
+  if (data.source === 'mempool') {
+    return NextResponse.json({
+      ...data,
+      timestamp: Math.floor(Date.now() / 1000),
+      id: data.tx_id,
+      hash: data.tx_id,
+      confirmations: 0,
+      used_tokens: [],
+      inputs: [],
+      outputs: [],
+      block_height: '~123123',
+      version_byte: 1,
+      fee: data.transaction.length / 2 / 1000,
+      amount: 0,
+    }, { status: 200 });
+  }
+
   if (data.error === "Invalid transaction Id") {
     return NextResponse.json({ error: "Invalid Txn hash" }, { status: 400 });
   }
