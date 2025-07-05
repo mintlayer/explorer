@@ -40,6 +40,8 @@ async function getData(tx: any) {
 
   const data = await res.json();
 
+  console.log('data', data);
+
   if (res.status === 400 || res.status === 404) {
     return { data };
   }
@@ -66,6 +68,8 @@ export default async function Tx({ params }: { params: { tx: string } }) {
   const tx = params.tx;
   const { data, tokens }: any = await getData(tx);
 
+  console.log('data', data);
+
   if (!data || data.error === "Invalid Txn hash") {
     return <NotFound title={"Transaction not found"} subtitle={"Invalid Transaction Id"} />;
   }
@@ -76,6 +80,84 @@ export default async function Tx({ params }: { params: { tx: string } }) {
 
   if (data.error === "Transaction found in another network") {
     return <NotFound title={"Transaction not found"} subtitle={"Transaction found in another network"} id={tx} linkUrl={`/tx/${tx}`} />;
+  }
+
+  if (data.status && data.status === 'accepted') {
+    return (
+      <>
+        <Hero>
+          <div className="max-w-6xl md:mx-auto px-5">
+            <div className="md:col-span-7">
+              <div className="text-5xl font-bold mt-4 mb-8 leading-[4rem]">Transaction</div>
+            </div>
+            <div className="grid md:grid-cols-12 gap-4 mb-8">
+              <div className="md:col-span-10 md:mr-20">
+                <Summary
+                  layout="narrow"
+                  data={[
+                    {
+                      title: "Transaction hash",
+                      icon: icon_hash,
+                      iconTooltip: "Transaction hash",
+                      value: data.hash,
+                      qrCode: data.hash,
+                      copy: data.hash,
+                    },
+                    ...(data.timestamp && [
+                      {
+                        title: "Timestamp",
+                        value: formatDate(data.timestamp),
+                        icon: icon_time,
+                        iconTooltip: "Timestamp",
+                      },
+                    ]),
+                    {
+                      title: "Block to include",
+                      value: <span className="text-primary-100 font-bold text-base">#{data.block_height}</span>,
+                      icon: icon_block,
+                      iconTooltip: "Block",
+                      link: `/block/${data.block_height}`,
+                    },
+                    {
+                      title: "Status",
+                      value: "Unconfirmed",
+                      icon: icon_time,
+                      iconTooltip: "Status",
+                    },
+                    {
+                      title: "Version",
+                      value: data.version_byte,
+                      icon: icon_size,
+                      iconTooltip: "Version",
+                    },
+                  ]}
+                />
+              </div>
+              <div className="md:col-span-2 grid md:grid-cols-1 grid-cols-1 grid-rows-2 gap-4 md:-ml-20">
+                <div>
+                  <HeadingBox
+                    title={'Unconfirmed'}
+                    subtitle="Confirmation status"
+                    icon={<Icon src={icon_transactions} />}
+                    progress={[data.confirmations, 10]}
+                    iconTooltip="Confirmation status"
+                  />
+                </div>
+                <div>
+                  <HeadingBox
+                    title={`${formatML(data.fee || 0)} ${coin}`}
+                    subtitle="Transaction fee"
+                    icon={<Icon src={icon_fee} />}
+                    iconTooltip="Transaction fee"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </Hero>
+        <Io data={{ inputs: data.inputs, outputs: data.outputs }} tokens={tokens} />
+      </>
+    );
   }
 
   return (

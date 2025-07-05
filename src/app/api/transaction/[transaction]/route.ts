@@ -36,6 +36,31 @@ export async function GET(request: Request, { params }: { params: { transaction:
 
   const data = await getTransaction(NODE_API_URL);
 
+  if (data.source && data.source === 'mempool') {
+    // get block height
+    const chain_tip = await fetch(NODE_API_URL + "/chain/tip", {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const chain_tip_data = await chain_tip.json();
+    const { block_height } = chain_tip_data;
+
+    return NextResponse.json({
+      ...data,
+      id: data.tx_id,
+      hash: data.tx_id,
+      confirmations: 0,
+      used_tokens: [],
+      inputs: data.metadata && data.metadata.inputs ? data.metadata.inputs : [],
+      outputs: data.metadata && data.metadata.outputs ? data.metadata.outputs : [],
+      block_height: parseInt(block_height) + 1,
+      version_byte: 1,
+      fee: data.transaction.length / 2 / 1000, // half of hex length in kb
+      amount: 0,
+    }, { status: 200 });
+  }
+
   if (data.error === "Invalid transaction Id") {
     return NextResponse.json({ error: "Invalid Txn hash" }, { status: 400 });
   }
