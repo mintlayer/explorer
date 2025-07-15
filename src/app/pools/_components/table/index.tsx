@@ -53,6 +53,7 @@ export function Table() {
   // Join modal state
   const [openJoinModal, setOpenJoinModal] = useState(false);
   const [joinPoolData, setJoinPoolData] = useState<any>(null);
+  const [isJoining, setIsJoining] = useState(false);
 
   const apyCalculator = difficulty !== 0;
 
@@ -154,11 +155,14 @@ export function Table() {
 
   const handleJoinPool = (poolData: any) => {
     setJoinPoolData(poolData);
+    setIsJoining(false); // Reset loading state when opening modal
     setOpenJoinModal(true);
   };
 
   const handleConfirmJoin = async () => {
     try {
+      setIsJoining(true);
+
       if (!joinPoolData) {
         alert("Pool data not available");
         return;
@@ -173,7 +177,8 @@ export function Table() {
       }
 
       // Create new delegation
-      await handleDelegate(joinPoolData.pool_id);
+      const tx_id = await handleDelegate(joinPoolData.pool_id);
+      console.log('tx_id', tx_id);
       setOpenJoinModal(false);
 
       // Reset modal state
@@ -185,6 +190,8 @@ export function Table() {
     } catch (error) {
       console.error("Join pool failed:", error);
       alert("Failed to join pool. Please try again.");
+    } finally {
+      setIsJoining(false);
     }
   };
 
@@ -521,7 +528,17 @@ export function Table() {
       )}
 
       {openJoinModal && joinPoolData && (
-        <Modal active={openJoinModal} setActive={setOpenJoinModal}>
+        <Modal
+          active={openJoinModal}
+          setActive={(active) => {
+            if (!isJoining) {
+              setOpenJoinModal(active);
+              if (!active) {
+                setIsJoining(false); // Reset loading state when modal closes
+              }
+            }
+          }}
+        >
           <div className="text-xl font-semibold w-full">Join Pool</div>
           <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
             You are about to create a new delegation to this pool. This will create an empty delegation that you can add funds to later.
@@ -607,12 +624,32 @@ export function Table() {
 
           <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
             <div
-              className="cursor-pointer p-2 rounded bg-primary-100 text-white"
-              onClick={handleConfirmJoin}
+              className={`p-2 rounded text-white flex items-center justify-center gap-2 ${
+                isJoining
+                  ? 'bg-primary-100/70 cursor-not-allowed'
+                  : 'bg-primary-100 cursor-pointer hover:bg-primary-110'
+              }`}
+              onClick={isJoining ? undefined : handleConfirmJoin}
             >
-              Confirm & Join Pool
+              {isJoining && (
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {isJoining ? 'Confirming...' : 'Confirm & Join Pool'}
             </div>
-            <div className="cursor-pointer p-2 rounded bg-gray-400 text-white" onClick={() => setOpenJoinModal(false)}>
+            <div
+              className={`p-2 rounded text-white ${
+                isJoining
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-gray-400 cursor-pointer hover:bg-gray-500'
+              }`}
+              onClick={isJoining ? undefined : () => {
+                setOpenJoinModal(false);
+                setIsJoining(false); // Reset loading state when canceling
+              }}
+            >
               Cancel
             </div>
           </div>
@@ -700,7 +737,7 @@ export function Table() {
       <table className="w-full mt-10">
         <thead className="hidden md:table-header-group sticky top-[72px] bg-white z-10">
           <tr>
-            <th className="px-2 py-2 text-left">Pool address</th>
+            <th className="px-2 py-2 text-left sticky left-0 ">Pool address</th>
             {apyCalculator && stakingAmount > 0 ? (
               <th>
                 <span
@@ -874,7 +911,7 @@ export function Table() {
 
               return (
                 <tr key={"s" + i} className={`grid grid-cols-5 gap-0 h-full ${detected && value.delegation_exists ? 'bg-blue-50 border-blue-200' : 'bg-white'} hover:bg-gray-50 group border mb-3 md:table-row`}>
-                  <td className="col-start-1 col-end-6 row-start-1 row-end-2 px-2 py-2 font-mono hover:text-primary-100 w-full">
+                  <td className=" sticky left-0 bg-white  col-start-1 col-end-6 row-start-1 row-end-2 px-2 py-2 font-mono hover:text-primary-100 w-full">
                     <div className="flex items-center gap-2">
                       <Link href={"/pool/" + value.pool_id}>
                         {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}

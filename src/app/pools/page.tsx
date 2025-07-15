@@ -28,7 +28,7 @@ export default async function Pool() {
 
       <SaveToLocalStorage />
 
-      <div className="max-w-6xl w-full mx-auto my-8 px-5">
+      <div className="w-full mx-auto my-8 px-5">
         <Table />
       </div>
     </>

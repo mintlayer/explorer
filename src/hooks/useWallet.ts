@@ -23,7 +23,10 @@ export function useWallet() {
   const handleDelegate = async (pool_id: string) => {
     const destination = await client.getAddresses();
     const t = await client.delegationCreate({ pool_id: pool_id, destination: destination?.receiving[0] });
-    return t;
+
+    const { tx_id } = client?.broadcastTx(t);
+
+    return tx_id;
   };
 
   const handleAddFunds = async (delegation_id: string, amount: string) => {
