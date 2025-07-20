@@ -17,24 +17,43 @@ import { Modal } from "@/app/_components/modal";
 
 import {calculateDelegationInfo} from "@/utils/staking";
 import {block_subsidy_at_height} from "@/utils/emission";
+import {WalletConnect} from "@/app/_components/wallet_connect";
 
 const coin = getCoin();
 
 export function Table() {
-  const { detected } = useWallet();
+  const { detected, delegations, balance, handleConnect, handleDelegate, handleAddFunds, handleWithdraw, refreshDelegations } = useWallet();
   const [pools, setPools] = useState<any>([]);
   const [orderField, setOrderField] = useState<any>("pool_id");
   const [blockHeight, setBlockHeight] = useState<any>(0);
   const [order, setOrder] = useState<any>("asc");
   const [difficulty, setDifficulty] = useState<any>(0);
   const [hideNonProfitPools, setHideNonProfitPools] = useState<any>(true);
+  const [showOnlyMyPools, setShowOnlyMyPools] = useState<any>(false);
   const [stakingAmountRaw, setStakingAmount] = useState<any>("1000");
   const [copy, setCopy] = useState<any>({});
 
   const [openModal, setOpenModal] = useState(false);
   const [poolId, setPoolId] = useState("");
 
-  const { handleDelegate } = useWallet();
+  // Withdrawal modal state
+  const [openWithdrawModal, setOpenWithdrawModal] = useState(false);
+  const [withdrawPoolId, setWithdrawPoolId] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [selectedDelegation, setSelectedDelegation] = useState<any>(null);
+  const [poolDelegations, setPoolDelegations] = useState<any[]>([]);
+
+  // Add funds modal state
+  const [openAddFundsModal, setOpenAddFundsModal] = useState(false);
+  const [addFundsPoolId, setAddFundsPoolId] = useState("");
+  const [addFundsAmount, setAddFundsAmount] = useState("");
+  const [selectedAddFundsDelegation, setSelectedAddFundsDelegation] = useState<any>(null);
+  const [addFundsPoolDelegations, setAddFundsPoolDelegations] = useState<any[]>([]);
+
+  // Join modal state
+  const [openJoinModal, setOpenJoinModal] = useState(false);
+  const [joinPoolData, setJoinPoolData] = useState<any>(null);
+  const [isJoining, setIsJoining] = useState(false);
 
   const apyCalculator = difficulty !== 0;
 
@@ -63,8 +82,30 @@ export function Table() {
     getDifficulty();
   }, []);
 
-  // sorter for number fields
+  // Enhanced sorter for number fields and delegation-based sorting
   const sorter = (a: any, b: any) => {
+    // Special handling for delegation-based sorting
+    if (orderField === "delegation_exists") {
+      const aHasDelegation = a.delegation_exists ? 1 : 0;
+      const bHasDelegation = b.delegation_exists ? 1 : 0;
+      if (order === "asc") {
+        return aHasDelegation - bHasDelegation;
+      } else {
+        return bHasDelegation - aHasDelegation;
+      }
+    }
+
+    if (orderField === "delegation_balance") {
+      const aBalance = a.delegation_balance || 0;
+      const bBalance = b.delegation_balance || 0;
+      if (order === "asc") {
+        return aBalance - bBalance;
+      } else {
+        return bBalance - aBalance;
+      }
+    }
+
+    // Default numeric sorting
     if (order === "asc") {
       return a[orderField] - b[orderField];
     } else {
@@ -73,13 +114,18 @@ export function Table() {
   };
 
   const filterer = (item: any) => {
+    // Filter by non-profit pools
     if (hideNonProfitPools) {
       if (item.margin_ratio === 1) return false;
       if (item.cost_per_block >= block_subsidy_at_height(blockHeight)) return false;
-      return true;
-    } else {
-      return true;
     }
+
+    // Filter to show only pools where user has delegations
+    if (showOnlyMyPools && detected) {
+      if (!item.delegation_exists) return false;
+    }
+
+    return true;
   };
 
   const handleSort =
@@ -97,12 +143,157 @@ export function Table() {
     }, 1000);
   };
 
-  const handleStackPool = (balance: number, poolId: string) => {
-    if (balance > 600000) {
-      setOpenModal(true);
-      setPoolId(poolId);
+  const handleStackPool = (poolBalance: number, poolId: string, hasExistingDelegation: boolean, poolData: any) => {
+    if (hasExistingDelegation) {
+      // If user has existing delegations, show add funds modal
+      handleAddFundsPool(poolId);
     } else {
-      handleDelegate(poolId);
+      // If no existing delegations, show join modal for confirmation
+      handleJoinPool(poolData);
+    }
+  };
+
+  const handleJoinPool = (poolData: any) => {
+    setJoinPoolData(poolData);
+    setIsJoining(false); // Reset loading state when opening modal
+    setOpenJoinModal(true);
+  };
+
+  const handleConfirmJoin = async () => {
+    try {
+      setIsJoining(true);
+
+      if (!joinPoolData) {
+        alert("Pool data not available");
+        return;
+      }
+
+      // Check if pool is oversaturated and show warning
+      if (joinPoolData.balance > 600000) {
+        setOpenJoinModal(false);
+        setOpenModal(true);
+        setPoolId(joinPoolData.pool_id);
+        return;
+      }
+
+      // Create new delegation
+      const tx_id = await handleDelegate(joinPoolData.pool_id);
+      console.log('tx_id', tx_id);
+      setOpenJoinModal(false);
+
+      // Reset modal state
+      setJoinPoolData(null);
+
+      // Refresh the delegations data
+      await refreshDelegations();
+
+    } catch (error) {
+      console.error("Join pool failed:", error);
+      alert("Failed to join pool. Please try again.");
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleWithdrawPool = (poolId: string, totalAmount: number) => {
+    // Find all delegations for this pool
+    const userPoolDelegations = delegations.filter(d => d.pool_id === poolId);
+
+    setWithdrawPoolId(poolId);
+    setPoolDelegations(userPoolDelegations);
+    setSelectedDelegation(userPoolDelegations[0] || null); // Select first delegation by default
+    setWithdrawAmount(userPoolDelegations[0]?.balance?.decimal?.toString() || "0");
+    setOpenWithdrawModal(true);
+  };
+
+  const handleDelegationSelect = (delegation: any) => {
+    setSelectedDelegation(delegation);
+    setWithdrawAmount(delegation.balance.decimal.toString());
+  };
+
+  const handleConfirmWithdraw = async () => {
+    try {
+      if (!selectedDelegation) {
+        alert("Please select a delegation to withdraw from");
+        return;
+      }
+
+      if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+        alert("Please enter a valid withdrawal amount");
+        return;
+      }
+
+      if (parseFloat(withdrawAmount) > parseFloat(selectedDelegation.balance.decimal)) {
+        alert("Withdrawal amount cannot exceed delegation balance");
+        return;
+      }
+
+      // Use the delegation's spend_destination as the withdrawal destination
+      const destinationAddress = selectedDelegation.spend_destination;
+
+      await handleWithdraw(selectedDelegation.delegation_id, withdrawAmount, destinationAddress);
+      setOpenWithdrawModal(false);
+
+      // Reset modal state
+      setSelectedDelegation(null);
+      setPoolDelegations([]);
+      setWithdrawAmount("");
+
+      // Refresh the delegations data
+      await refreshDelegations();
+
+    } catch (error) {
+      console.error("Withdrawal failed:", error);
+      alert("Withdrawal failed. Please try again.");
+    }
+  };
+
+  const handleAddFundsPool = (poolId: string) => {
+    // Find all delegations for this pool
+    const userPoolDelegations = delegations.filter(d => d.pool_id === poolId);
+
+    setAddFundsPoolId(poolId);
+    setAddFundsPoolDelegations(userPoolDelegations);
+    setSelectedAddFundsDelegation(userPoolDelegations[0] || null); // Select first delegation by default
+    setAddFundsAmount("");
+    setOpenAddFundsModal(true);
+  };
+
+  const handleAddFundsDelegationSelect = (delegation: any) => {
+    setSelectedAddFundsDelegation(delegation);
+  };
+
+  const handleConfirmAddFunds = async () => {
+    try {
+      if (!selectedAddFundsDelegation) {
+        alert("Please select a delegation to add funds to");
+        return;
+      }
+
+      if (!addFundsAmount || parseFloat(addFundsAmount) <= 0) {
+        alert("Please enter a valid amount to add");
+        return;
+      }
+
+      if (parseFloat(addFundsAmount) > balance) {
+        alert("Amount cannot exceed your available balance");
+        return;
+      }
+
+      await handleAddFunds(selectedAddFundsDelegation.delegation_id, addFundsAmount);
+      setOpenAddFundsModal(false);
+
+      // Reset modal state
+      setSelectedAddFundsDelegation(null);
+      setAddFundsPoolDelegations([]);
+      setAddFundsAmount("");
+
+      // Refresh the delegations data
+      await refreshDelegations();
+
+    } catch (error) {
+      console.error("Add funds failed:", error);
+      alert("Add funds failed. Please try again.");
     }
   };
 
@@ -130,27 +321,335 @@ export function Table() {
     };
   };
 
+  const injectDelegations = (delegations: any) => (pool: any) => {
+    if(!detected) return pool;
+
+    const delegationsByPoolId = delegations.reduce((acc: any, delegation: any) => {
+      const poolId = delegation.pool_id;
+      if (!acc[poolId]) {
+        acc[poolId] = [];
+      }
+      acc[poolId].push(delegation);
+      return acc;
+    }, {});
+
+    const poolDelegations = delegationsByPoolId[pool.pool_id] || [];
+
+    return {
+      ...pool,
+      delegation_exists: !!delegationsByPoolId[pool.pool_id],
+      delegation_balance: poolDelegations.reduce((acc: any, delegation: any) => {
+        return acc + parseFloat(delegation.balance.decimal);
+      }, 0) || 0,
+      delegation_count: poolDelegations.length,
+      user_delegations: poolDelegations, // Store the actual delegation objects for detailed access
+    }
+  }
+
   return (
     <>
+      <WalletConnect handleConnect={handleConnect} detected={detected} delegations={delegations}/>
+
       {openModal && (
         <Modal active={openModal} setActive={setOpenModal}>
-          <div className="text-xl font-semibold w-full">Delegating to a pool that has reached saturation</div>
+          <div className="text-xl font-semibold w-full">Joining a pool that has reached saturation</div>
           <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
-            Delegating to a pool that has reached saturation is not recommended. Contributions to a saturated pool will have a minimal impact on the pool’s
-            effective balance, potentially diminishing the rewards you might expect. Please consider delegating to a less populated pool to optimize your
+            This pool has reached saturation (over 600,000 {coin}). Joining a saturated pool is not recommended as contributions will have minimal impact on the pool’s
+            effective balance, potentially diminishing the rewards you might expect. Please consider joining a less populated pool to optimize your
             delegation benefits.
           </p>
           <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
             <div
-              className="cursor-pointer p-2 rounded bg-base-gray40 text-white"
+              className="cursor-pointer p-2 rounded bg-orange-500 text-white"
               onClick={() => {
                 setOpenModal(false);
                 handleDelegate(poolId);
+                refreshDelegations();
               }}
             >
-              Stake Anyway
+              Join Anyway
             </div>
             <div className="cursor-pointer p-2 rounded bg-primary-100 text-white" onClick={() => setOpenModal(false)}>
+              Cancel
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {openWithdrawModal && (
+        <Modal active={openWithdrawModal} setActive={setOpenWithdrawModal}>
+          <div className="text-xl font-semibold w-full">Withdraw from Pool</div>
+          <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
+            You are about to withdraw from your delegation. Please note that withdrawn coins will have a 7200-block maturity period (approximately 10 days) before they become available.
+          </p>
+          <div className="flex flex-col gap-4 py-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Delegation to Withdraw From</label>
+              <div className="space-y-2">
+                {poolDelegations.map((delegation, index) => (
+                  <div
+                    key={delegation.delegation_id}
+                    className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                      selectedDelegation?.delegation_id === delegation.delegation_id
+                        ? 'border-primary-100 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onClick={() => handleDelegationSelect(delegation)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className="font-mono text-sm">
+                          {delegation.delegation_id.slice(0, 20)}...{delegation.delegation_id.slice(-10)}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Destination: {delegation.spend_destination.slice(0, 15)}...{delegation.spend_destination.slice(-10)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">
+                          {formatML(delegation.balance.decimal)} {coin}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Available
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {selectedDelegation && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Amount to withdraw ({coin})</label>
+                <input
+                  type="text"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  placeholder="Enter amount"
+                  max={selectedDelegation.balance.decimal}
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Max available: {formatML(selectedDelegation.balance.decimal)} {coin}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Withdrawal destination: {selectedDelegation.spend_destination}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
+            <div
+              className="cursor-pointer p-2 rounded bg-red-500 text-white"
+              onClick={handleConfirmWithdraw}
+            >
+              Confirm Withdrawal
+            </div>
+            <div className="cursor-pointer p-2 rounded bg-gray-400 text-white" onClick={() => setOpenWithdrawModal(false)}>
+              Cancel
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {openAddFundsModal && (
+        <Modal active={openAddFundsModal} setActive={setOpenAddFundsModal}>
+          <div className="text-xl font-semibold w-full">Add Funds to Delegation</div>
+          <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
+            You are about to add funds to your existing delegation. Select which delegation to add funds to and specify the amount.
+          </p>
+          <div className="flex flex-col gap-4 py-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Delegation to Add Funds To</label>
+              <div className="space-y-2">
+                {addFundsPoolDelegations.map((delegation, index) => (
+                  <div
+                    key={delegation.delegation_id}
+                    className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                      selectedAddFundsDelegation?.delegation_id === delegation.delegation_id
+                        ? 'border-primary-100 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onClick={() => handleAddFundsDelegationSelect(delegation)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className="font-mono text-sm">
+                          {delegation.delegation_id.slice(0, 20)}...{delegation.delegation_id.slice(-10)}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Destination: {delegation.spend_destination.slice(0, 15)}...{delegation.spend_destination.slice(-10)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">
+                          {formatML(delegation.balance.decimal)} {coin}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Current Balance
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {selectedAddFundsDelegation && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Amount to add ({coin})</label>
+                <input
+                  type="text"
+                  value={addFundsAmount}
+                  onChange={(e) => setAddFundsAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  placeholder="Enter amount to add"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Your available balance: {formatML(balance.toString())} {coin}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Current delegation balance: {formatML(selectedAddFundsDelegation.balance.decimal)} {coin}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
+            <div
+              className="cursor-pointer p-2 rounded bg-primary-100 text-white"
+              onClick={handleConfirmAddFunds}
+            >
+              Add Funds
+            </div>
+            <div className="cursor-pointer p-2 rounded bg-gray-400 text-white" onClick={() => setOpenAddFundsModal(false)}>
+              Cancel
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {openJoinModal && joinPoolData && (
+        <Modal
+          active={openJoinModal}
+          setActive={(active) => {
+            if (!isJoining) {
+              setOpenJoinModal(active);
+              if (!active) {
+                setIsJoining(false); // Reset loading state when modal closes
+              }
+            }
+          }}
+        >
+          <div className="text-xl font-semibold w-full">Join Pool</div>
+          <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
+            You are about to create a new delegation to this pool. This will create an empty delegation that you can add funds to later.
+          </p>
+
+          <div className="flex flex-col gap-4 py-4">
+            {/* Pool Summary */}
+            <div className="bg-gray-50 p-4 rounded-md">
+              <h3 className="font-semibold mb-3">Pool Summary</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-600">Pool ID:</span>
+                  <div className="font-mono text-xs mt-1">
+                    {joinPoolData.pool_id.slice(0, 20)}...{joinPoolData.pool_id.slice(-15)}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Total Balance:</span>
+                  <div className="font-semibold mt-1">
+                    {formatML(joinPoolData.balance, 0)} {coin}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Cost per Block:</span>
+                  <div className="font-semibold mt-1">
+                    {joinPoolData.cost_per_block} {coin}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Margin Ratio:</span>
+                  <div className="font-semibold mt-1">
+                    {(joinPoolData.margin_ratio * 100).toFixed(1)}%
+                  </div>
+                </div>
+                {apyCalculator && stakingAmount > 0 && (
+                  <>
+                    <div>
+                      <span className="text-gray-600">Estimated APY:</span>
+                      <div className="font-semibold mt-1 text-primary-100">
+                        {joinPoolData.apy?.toFixed(2)}%
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Est. Daily Reward:</span>
+                      <div className="font-semibold mt-1 text-primary-100">
+                        {joinPoolData.reward_per_day_delegator?.toFixed(2)} {coin}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Transaction Fee Info */}
+            <div className="bg-blue-50 p-4 rounded-md">
+              <h3 className="font-semibold mb-2 text-blue-800">Transaction Information</h3>
+              <div className="text-sm text-blue-700">
+                <div className="mb-2">
+                  <span className="font-medium">Transaction Fee:</span> Network fee will be deducted from your balance
+                </div>
+                <div className="mb-2">
+                  <span className="font-medium">Delegation Creation:</span> This creates an empty delegation
+                </div>
+              </div>
+            </div>
+
+            {/* Next Steps Info */}
+            <div className="bg-yellow-50 p-4 rounded-md">
+              <h3 className="font-semibold mb-2 text-yellow-800">Next Steps</h3>
+              <div className="text-sm text-yellow-700">
+                <div className="mb-2">
+                  1. After joining, you'll need to add funds to your delegation to start earning rewards
+                </div>
+                <div className="mb-2">
+                  2. Use the "Add Coins" button to fund your delegation
+                </div>
+                <div>
+                  3. Your delegation will start earning rewards once funded
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
+            <div
+              className={`p-2 rounded text-white flex items-center justify-center gap-2 ${
+                isJoining
+                  ? 'bg-primary-100/70 cursor-not-allowed'
+                  : 'bg-primary-100 cursor-pointer hover:bg-primary-110'
+              }`}
+              onClick={isJoining ? undefined : handleConfirmJoin}
+            >
+              {isJoining && (
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {isJoining ? 'Confirming...' : 'Confirm & Join Pool'}
+            </div>
+            <div
+              className={`p-2 rounded text-white ${
+                isJoining
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-gray-400 cursor-pointer hover:bg-gray-500'
+              }`}
+              onClick={isJoining ? undefined : () => {
+                setOpenJoinModal(false);
+                setIsJoining(false); // Reset loading state when canceling
+              }}
+            >
               Cancel
             </div>
           </div>
@@ -180,11 +679,17 @@ export function Table() {
 
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="mt-3">
-          <div>
+          <div className="flex flex-col gap-2">
             <div className="flex flex-row items-center gap-2">
               <Switch checked={hideNonProfitPools} onChange={() => setHideNonProfitPools(!hideNonProfitPools)} />
               Hide pools that do not provide any rewards to delegators
             </div>
+            {detected && (
+              <div className="flex flex-row items-center gap-2">
+                <Switch checked={showOnlyMyPools} onChange={() => setShowOnlyMyPools(!showOnlyMyPools)} />
+                Show only pools where I have delegations
+              </div>
+            )}
           </div>
         </div>
 
@@ -210,6 +715,10 @@ export function Table() {
             { field: "apy", label: "APY" },
             { field: "reward_per_day_delegator", label: "Reward" },
             { field: "balance", label: "Pool Balance" },
+            ...(detected ? [
+              { field: "delegation_exists", label: "My Pools" },
+              { field: "delegation_balance", label: "My Stake" },
+            ] : []),
           ].map(({ field, label }) => {
             return (
               <button
@@ -228,7 +737,7 @@ export function Table() {
       <table className="w-full mt-10">
         <thead className="hidden md:table-header-group sticky top-[72px] bg-white z-10">
           <tr>
-            <th className="px-2 py-2 text-left">Pool address</th>
+            <th className="px-2 py-2 text-left sticky left-0 ">Pool address</th>
             {apyCalculator && stakingAmount > 0 ? (
               <th>
                 <span
@@ -365,32 +874,57 @@ export function Table() {
                 Total Balance
               </span>
             </th>
-            <th></th>
+            {detected && (
+              <th className="px-2 py-2 text-right">
+                <span
+                  onClick={handleSort("delegation_balance", "asc")}
+                  data-tooltip-id="tooltip"
+                  data-tooltip-content={`Sort ascending`}
+                  className="cursor-pointer font-normal"
+                >
+                  ↑
+                </span>
+                <span
+                  onClick={handleSort("delegation_balance", "desc")}
+                  data-tooltip-id="tooltip"
+                  data-tooltip-content={`Sort descending`}
+                  className="cursor-pointer font-normal"
+                >
+                  ↓
+                </span>
+                <span data-tooltip-id="tooltip" data-tooltip-content={`Your stake in this pool`}>
+                  Your Stake
+                </span>
+              </th>
+            )}
+            {detected && <th></th>}
           </tr>
         </thead>
         <tbody className="flex flex-col md:table-row-group">
           {pools
             .map(injectApy(stakingAmount))
+            .map(injectDelegations(delegations))
             ?.sort(sorter)
             .filter(filterer)
             .map((value: any, i: number) => {
               const { apy, reward_per_day_pool, reward_per_day_delegator, part_label, hours_for_block } = value;
 
               return (
-                <tr key={"s" + i} className={`grid grid-cols-5 gap-0 h-full bg-white hover:bg-white group border mb-3 md:table-row`}>
-                  <td className="col-start-1 col-end-6 row-start-1 row-end-2 px-2 py-2 font-mono hover:text-primary-100 w-full">
-                    <Link href={"/pool/" + value.pool_id}>
-                      {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}
-                    </Link>
-
-                    <span
-                      className="cursor-pointer md:opacity-5 group-hover:opacity-100"
-                      data-tooltip-id="tooltip"
-                      data-tooltip-content={copy[value.pool_id] ? "Copied" : "Click to copy pool address"}
-                      onClick={handleCopy(value.pool_id)}
-                    >
-                      <Image className="inline ml-2" src={copy_icon} alt="" />
-                    </span>
+                <tr key={"s" + i} className={`grid grid-cols-5 gap-0 h-full ${detected && value.delegation_exists ? 'bg-blue-50 border-blue-200' : 'bg-white'} hover:bg-gray-50 group border mb-3 md:table-row`}>
+                  <td className=" sticky left-0 bg-white  col-start-1 col-end-6 row-start-1 row-end-2 px-2 py-2 font-mono hover:text-primary-100 w-full">
+                    <div className="flex items-center gap-2">
+                      <Link href={"/pool/" + value.pool_id}>
+                        {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}
+                      </Link>
+                      <span
+                        className="cursor-pointer md:opacity-5 group-hover:opacity-100"
+                        data-tooltip-id="tooltip"
+                        data-tooltip-content={copy[value.pool_id] ? "Copied" : "Click to copy pool address"}
+                        onClick={handleCopy(value.pool_id)}
+                      >
+                        <Image className="inline" src={copy_icon} alt="" />
+                      </span>
+                    </div>
                   </td>
                   {apyCalculator && stakingAmount > 0 ? (
                     <td className="col-start-1 col-end-3 row-start-2 row-end-3 md:border-l px-2 py-2 text-right tabular-nums  hidden md:table-cell">
@@ -503,17 +1037,49 @@ export function Table() {
                       </span>
                     </div>
                   </td>
-                  <td className="border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
-                    <button
-                      data-tooltip-id="tooltip"
-                      data-tooltip-content={detected ? "Stake to this pool" : "Connect wallet to stake"}
-                      disabled={!detected}
-                      className={`${detected ? "bg-primary-100 hover:bg-primary-110" : "bg-secondary-100"} px-2 py-1 text-white rounded`}
-                      onClick={() => handleStackPool(value.balance, value.pool_id)}
-                    >
-                      Stake
-                    </button>
-                  </td>
+                  {detected && (
+                    <td className="border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
+                      <span className="md:hidden text-sm">Your Stake</span>
+                      <div className="flex flex-col items-end">
+                        {value?.delegation_balance > 0 ? (
+                          <div>
+                            <div className="font-semibold text-primary-100">
+                              {formatML(value.delegation_balance)} {coin}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {value.delegation_count} delegation{value.delegation_count > 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-gray-400">-</div>
+                        )}
+                      </div>
+                    </td>
+                  )}
+                  {detected && (
+                    <td className="border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
+                      <div className="flex flex-col gap-1">
+                        <button
+                          data-tooltip-id="tooltip"
+                          data-tooltip-content={value?.delegation_exists ? "Add funds to existing delegation" : "Create new delegation in this pool"}
+                          className="bg-primary-100 hover:bg-primary-110 px-2 py-1 text-white rounded text-sm"
+                          onClick={() => handleStackPool(value.balance, value.pool_id, value?.delegation_exists, value)}
+                        >
+                          {value?.delegation_exists ? 'Add Coins' : 'Join'}
+                        </button>
+                        {value?.delegation_balance > 0 && (
+                          <button
+                            data-tooltip-id="tooltip"
+                            data-tooltip-content="Withdraw from this pool"
+                            className="bg-red-500 hover:bg-red-600 px-2 py-1 text-white rounded text-sm"
+                            onClick={() => handleWithdrawPool(value.pool_id, value.delegation_balance)}
+                          >
+                            Withdraw
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}

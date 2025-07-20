@@ -1,59 +1,134 @@
 import { useEffect, useState } from "react";
-
-const requiredVersion = "1.2.0";
+import { Client } from "@mintlayer/sdk";
 
 export function useWallet() {
-  const [extensionId, setExtensionId] = useState("");
   const [detected, setDetected] = useState(false);
   const [balance, setBalance] = useState(0);
+  const [client, setClient] = useState<Client | null>(null);
+  const [delegations, setDelegations] = useState<any[]>([]);
 
   useEffect(() => {
-    window.addEventListener("InitWalletResponse", (evt: any) => {
-      if (evt && evt.detail && "version" in evt.detail) {
-        const data = evt.detail;
-        setDetected(data.version);
-        setExtensionId(data.extension_id);
+    const fetchClient = async () => {
+      try {
+        const newClient = await Client.create({ network: "testnet" });
+        setClient(newClient);
+      } catch (error) {
+        console.error("Error creating client:", error);
       }
-    });
-    const event = new CustomEvent("InitWalletRequest");
-    window.dispatchEvent(event);
+    };
+
+    fetchClient();
   }, []);
 
-  const handleDelegate = (pool_id: string) => {
-    const referral_code = localStorage.getItem("staking-program-referral-code") || "";
+  const handleDelegate = async (pool_id: string) => {
+    const destination = await client.getAddresses();
+    const t = await client.delegationCreate({ pool_id: pool_id, destination: destination?.receiving[0] });
 
-    window.postMessage(
-      {
-        direction: "from-page-script",
-        message: { message: "delegate", pool_id: pool_id, referral_code: referral_code },
-      },
-      window.location.origin,
-    );
+    const { tx_id } = client?.broadcastTx(t);
 
-    const browser = (window as any).chrome;
+    return tx_id;
+  };
 
-    if (typeof browser !== "undefined") {
-      browser.runtime.sendMessage(extensionId, { message: "delegate", pool_id: pool_id, referral_code: referral_code }).then(
-        (reply: any) => {
-          // handle reply
-        },
-        (error: any) => {
-          // handle error
-          console.error(error.message);
-        },
-      );
+  const handleAddFunds = async (delegation_id: string, amount: string) => {
+    try {
+      if (!client) {
+        throw new Error("Wallet client not available");
+      }
+
+      // Note: This is a placeholder for the add funds functionality
+      // The actual SDK method might be delegationStake or similar
+      const result = await client.delegationStake({
+        delegation_id,
+        amount: parseFloat(amount),
+      });
+
+      console.log('Add funds result:', result);
+
+      // Refresh delegations and balance after adding funds
+      const updatedDelegations = await client.getDelegations();
+      setDelegations(updatedDelegations);
+
+      const updatedBalance = await client.getBalance();
+      setBalance(parseFloat(updatedBalance.toString()) || 0);
+
+      return result;
+    } catch (error) {
+      console.error("Error adding funds to delegation:", error);
+      throw error;
+    }
+  };
+
+  const handleWithdraw = async (delegation_id: string, amount: string, destination_address: string) => {
+    try {
+      if (!client) {
+        throw new Error("Wallet client not available");
+      }
+
+      // Note: This is a placeholder for the withdrawal functionality
+      // The actual SDK method might be different - this needs to be verified
+      const result = await client.delegationWithdraw({
+        delegation_id,
+        amount: parseFloat(amount),
+      });
+
+      console.log('Withdrawal result:', result);
+
+      // Refresh delegations after withdrawal
+      const updatedDelegations = await client.getDelegations();
+      setDelegations(updatedDelegations);
+
+      return result;
+    } catch (error) {
+      console.error("Error withdrawing from delegation:", error);
+      throw error;
+    }
+  };
+
+  const refreshDelegations = async () => {
+    try {
+      if (client && detected) {
+        const delegationData = await client.getDelegations();
+        setDelegations(delegationData);
+
+        // Also refresh balance
+        const balanceData = await client.getBalance();
+        setBalance(parseFloat(balanceData.toString()) || 0);
+      }
+    } catch (error) {
+      console.error("Error refreshing delegations:", error);
     }
   };
 
   const handleConnect = () => {
-    const event = new CustomEvent("InitWalletRequest");
-    window.dispatchEvent(event);
+    if (client) {
+      client.connect()
+        .then(async () => {
+          setDetected(true);
+          const delegationData = await client.getDelegations();
+          setDelegations(delegationData);
+
+          // Fetch wallet balance
+          try {
+            const balanceData = await client.getBalance();
+            setBalance(parseFloat(balanceData.toString()) || 0);
+          } catch (error) {
+            console.error("Error fetching balance:", error);
+          }
+        })
+        .catch((error) => {
+          console.error("Error connecting to wallet:", error);
+        });
+    }
   };
 
   return {
     detected,
     balance,
     handleDelegate,
+    handleAddFunds,
+    handleWithdraw,
     handleConnect,
+    delegations,
+    refreshDelegations,
   };
 }
