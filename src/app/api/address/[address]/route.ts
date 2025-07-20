@@ -126,17 +126,32 @@ export async function GET(request: Request, { params }: { params: { address: str
   }
 
   let vesting = [];
+  let token_vesting: any = {};
 
   for (let i = 0; i < data_utxos.length; i++) {
     if (data_utxos[i].utxo.type === "LockThenTransfer") {
       if (data_utxos[i].utxo.lock.type === "UntilTime" && data_utxos[i].utxo.lock.content.timestamp > Date.now() / 1000) {
-        vesting.push({
-          coin: "ML",
-          symbol: "ML",
-          type: "Coin",
-          amount: data_utxos[i].utxo.value.amount.decimal,
-          unlock_time: data_utxos[i].utxo.lock.content.timestamp,
-        });
+        if(data_utxos[i].utxo.value.type === 'Coin') {
+          vesting.push({
+            coin: "ML",
+            symbol: "ML",
+            type: "Coin",
+            amount: data_utxos[i].utxo.value.amount.decimal,
+            unlock_time: data_utxos[i].utxo.lock.content.timestamp,
+          });
+        }
+        if(data_utxos[i].utxo.value.type === 'TokenV1') {
+          if(!token_vesting[data_utxos[i].utxo.value.token_id]) {
+            token_vesting[data_utxos[i].utxo.value.token_id] = []
+          }
+          token_vesting[data_utxos[i].utxo.value.token_id].push({
+            coin: "-",
+            symbol: "-",
+            type: "TokenV1",
+            amount: data_utxos[i].utxo.value.amount.decimal,
+            unlock_time: data_utxos[i].utxo.lock.content.timestamp,
+          });
+        }
       }
       if (data_utxos[i].utxo.lock.type === "ForBlockCount") {
         const res_tx = await fetch(NODE_API_URL + "/transaction/" + data_utxos[i].outpoint.source_id, {
@@ -156,14 +171,29 @@ export async function GET(request: Request, { params }: { params: { address: str
         const data_block = await res_block.json();
 
         if (data_utxos[i].utxo.lock.content + data_block.height > block_height) {
-          vesting.push({
-            coin: "ML",
-            symbol: "ML",
-            type: "Coin",
-            amount: data_utxos[i].utxo.value.amount.decimal,
-            unlock_time: data_block.header.timestamp.timestamp + data_utxos[i].utxo.lock.content * 60 * 2,
-            unlock_block: data_utxos[i].utxo.lock.content + data_block.height,
-          });
+          if(data_utxos[i].utxo.value.type === 'Coin') {
+            vesting.push({
+              coin: "ML",
+              symbol: "ML",
+              type: "Coin",
+              amount: data_utxos[i].utxo.value.amount.decimal,
+              unlock_time: data_block.header.timestamp.timestamp + data_utxos[i].utxo.lock.content * 60 * 2,
+              unlock_block: data_utxos[i].utxo.lock.content + data_block.height,
+            });
+          }
+          if(data_utxos[i].utxo.value.type === 'TokenV1') {
+            if(!token_vesting[data_utxos[i].utxo.value.token_id]) {
+              token_vesting[data_utxos[i].utxo.value.token_id] = []
+            }
+            token_vesting[data_utxos[i].utxo.value.token_id].push({
+              coin: "-",
+              symbol: "-",
+              type: "TokenV1",
+              amount: data_utxos[i].utxo.value.amount.decimal,
+              unlock_time: data_block.header.timestamp.timestamp + data_utxos[i].utxo.lock.content * 60 * 2,
+              unlock_block: data_utxos[i].utxo.lock.content + data_block.height,
+            });
+          }
         }
       }
     }
@@ -236,6 +266,7 @@ export async function GET(request: Request, { params }: { params: { address: str
         amount: token_balances[token_id].amount,
         amount_locked: 0,
         token_id: token_id,
+        vesting: token_vesting[token_id] || [],
       };
     }
     if(nft_info[token_id]) {
