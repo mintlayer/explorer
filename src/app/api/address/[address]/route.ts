@@ -141,7 +141,6 @@ export async function GET(request: Request, { params }: { params: { address: str
           });
         }
         if(data_utxos[i].utxo.value.type === 'TokenV1') {
-          console.log('Token found');
           if(!token_vesting[data_utxos[i].utxo.value.token_id]) {
             token_vesting[data_utxos[i].utxo.value.token_id] = []
           }
@@ -257,8 +256,6 @@ export async function GET(request: Request, { params }: { params: { address: str
       nft_info[token_id] = data_nft;
     }
   }
-
-  console.log('token_vesting[token_id]', token_vesting);
 
   const token_wallet_data = Object.keys(token_balances).map((token_id) => {
     if(token_info[token_id]) {
