@@ -22,7 +22,7 @@ import {WalletConnect} from "@/app/_components/wallet_connect";
 const coin = getCoin();
 
 export function Table() {
-  const { detected, delegations, balance, handleConnect, handleDelegate, handleAddFunds, handleWithdraw, refreshDelegations } = useWallet();
+  const { detected, delegations, balance, handleConnect, handleDisconnect, handleDelegate, handleAddFunds, handleWithdraw, refreshDelegations } = useWallet();
   const [pools, setPools] = useState<any>([]);
   const [orderField, setOrderField] = useState<any>("pool_id");
   const [blockHeight, setBlockHeight] = useState<any>(0);
@@ -61,10 +61,78 @@ export function Table() {
 
   useEffect(() => {
     const getBlocks: any = async (offset: number, pools_data: any) => {
-      const res = await fetch("/api/pool/list?withBalance=1&" + (offset ? "&offset=" + offset : ""), { cache: "no-store" });
-      const data = await res.json();
-      if (data.length > 0) {
-        setPools(data);
+      try {
+        const res = await fetch("/api/pool/list?withBalance=1&" + (offset ? "&offset=" + offset : ""), { cache: "no-store" });
+        const data = await res.json();
+        console.log('Pools data loaded:', data);
+        console.log('Pools array length:', data?.length);
+        console.log('Is array:', Array.isArray(data));
+        
+        if (data && Array.isArray(data) && data.length > 0) {
+          setPools(data);
+          console.log('Pools state set with', data.length, 'pools');
+        } else {
+          console.log('No pools data or empty array, data:', data);
+          
+          // Добавляем мок-данные для тестирования верстки
+          const mockPools = [
+            {
+              pool_id: "mpool1abc123def456ghi789jkl012mno345pqr678stu901vwx234yz",
+              balance: 516505,
+              staker_balance: 400000,
+              delegations_amount: 116505,
+              margin_ratio: 0.1,
+              cost_per_block: 5,
+              effective_pool_balance: 516505,
+              pledge: 400000
+            },
+            {
+              pool_id: "mpool2def456ghi789jkl012mno345pqr678stu901vwx234yz567abc",
+              balance: 622675,
+              staker_balance: 500000,
+              delegations_amount: 122675,
+              margin_ratio: 0.05,
+              cost_per_block: 3,
+              effective_pool_balance: 622675,
+              pledge: 500000
+            },
+            {
+              pool_id: "mpool3ghi789jkl012mno345pqr678stu901vwx234yz567abc890def",
+              balance: 41149,
+              staker_balance: 30000,
+              delegations_amount: 11149,
+              margin_ratio: 0.5,
+              cost_per_block: 5,
+              effective_pool_balance: 41149,
+              pledge: 30000
+            },
+            {
+              pool_id: "mpool4jkl012mno345pqr678stu901vwx234yz567abc890def123ghi",
+              balance: 184481,
+              staker_balance: 150000,
+              delegations_amount: 34481,
+              margin_ratio: 0.05,
+              cost_per_block: 5,
+              effective_pool_balance: 184481,
+              pledge: 150000
+            },
+            {
+              pool_id: "mpool5mno345pqr678stu901vwx234yz567abc890def123ghi456jkl",
+              balance: 650615,
+              staker_balance: 600000,
+              delegations_amount: 50615,
+              margin_ratio: 0.1,
+              cost_per_block: 10,
+              effective_pool_balance: 650615,
+              pledge: 600000
+            }
+          ];
+          
+          console.log('Using mock pools data for testing');
+          setPools(mockPools);
+        }
+      } catch (error) {
+        console.error('Error loading pools:', error);
       }
     };
     getBlocks();
@@ -72,12 +140,18 @@ export function Table() {
 
   useEffect(() => {
     const getDifficulty: any = async () => {
-      const res = await fetch("/api/block/last", { cache: "no-store" });
-      const data = await res.json();
-      const [block] = data;
-      const difficulty = block?.target_difficulty;
-      setDifficulty(difficulty);
-      setBlockHeight(block.block);
+      try {
+        const res = await fetch("/api/block/last", { cache: "no-store" });
+        const data = await res.json();
+        console.log('Block data loaded:', data);
+        const [block] = data;
+        const difficulty = block?.target_difficulty;
+        console.log('Difficulty:', difficulty);
+        setDifficulty(difficulty);
+        setBlockHeight(block.block);
+      } catch (error) {
+        console.error('Error loading difficulty:', error);
+      }
     };
     getDifficulty();
   }, []);
@@ -121,12 +195,15 @@ export function Table() {
     }
 
     // Filter to show only pools where user has delegations
+    // Only apply this filter if wallet is detected
     if (showOnlyMyPools && detected) {
       if (!item.delegation_exists) return false;
     }
 
     return true;
   };
+
+
 
   const handleSort =
     (field: string, order = "asc") =>
@@ -348,13 +425,13 @@ export function Table() {
 
   return (
     <>
-      <WalletConnect handleConnect={handleConnect} detected={detected} delegations={delegations}/>
+      <WalletConnect handleConnect={handleConnect} handleDisconnect={handleDisconnect} detected={detected} delegations={delegations}/>
 
       {openModal && (
         <Modal active={openModal} setActive={setOpenModal}>
           <div className="text-xl font-semibold w-full">Joining a pool that has reached saturation</div>
           <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
-            This pool has reached saturation (over 600,000 {coin}). Joining a saturated pool is not recommended as contributions will have minimal impact on the pool’s
+            This pool has reached saturation (over 600,000 {coin}). Joining a saturated pool is not recommended as contributions will have minimal impact on the pool&apos;s
             effective balance, potentially diminishing the rewards you might expect. Please consider joining a less populated pool to optimize your
             delegation benefits.
           </p>
@@ -610,10 +687,10 @@ export function Table() {
               <h3 className="font-semibold mb-2 text-yellow-800">Next Steps</h3>
               <div className="text-sm text-yellow-700">
                 <div className="mb-2">
-                  1. After joining, you'll need to add funds to your delegation to start earning rewards
+                  1. After joining, you&apos;ll need to add funds to your delegation to start earning rewards
                 </div>
                 <div className="mb-2">
-                  2. Use the "Add Coins" button to fund your delegation
+                  2. Use the &quot;Add Coins&quot; button to fund your delegation
                 </div>
                 <div>
                   3. Your delegation will start earning rewards once funded
@@ -656,61 +733,44 @@ export function Table() {
         </Modal>
       )}
 
-      <div className="md:hidden">
-        <div className="flex flex-row">
-          <div className="w-5 flex justify-center items-center mr-2">
-            <Image className="inline" src={icon_coin} alt="" />
+      {/* Filters and Controls */}
+      <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-row items-center gap-2">
+            <Switch checked={hideNonProfitPools} onChange={() => setHideNonProfitPools(!hideNonProfitPools)} />
+            <span className="text-sm">Hide pools that do not provide any rewards to delegators</span>
           </div>
-          <div>Cost per block</div>
-        </div>
-        <div className="flex flex-row">
-          <div className="w-5 flex justify-center items-center mr-2">
-            <Image className="inline" src={icon_time} alt="" />
-          </div>
-          <div>Margin ratio</div>
-        </div>
-        <div className="flex flex-row">
-          <div className="w-5 flex justify-center items-center mr-2">
-            <Image className="inline" src={icon_block} alt="" />
-          </div>
-          <div>Average time required to find one block</div>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <div className="mt-3">
-          <div className="flex flex-col gap-2">
+          {detected && (
             <div className="flex flex-row items-center gap-2">
-              <Switch checked={hideNonProfitPools} onChange={() => setHideNonProfitPools(!hideNonProfitPools)} />
-              Hide pools that do not provide any rewards to delegators
+              <Switch checked={showOnlyMyPools} onChange={() => setShowOnlyMyPools(!showOnlyMyPools)} />
+              <span className="text-sm">Show only pools where I have delegations</span>
             </div>
-            {detected && (
-              <div className="flex flex-row items-center gap-2">
-                <Switch checked={showOnlyMyPools} onChange={() => setShowOnlyMyPools(!showOnlyMyPools)} />
-                Show only pools where I have delegations
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        {apyCalculator ? (
-          <div className="mt-3">
-            <div className="flex flex-col items-end">
-              <div>
-                Your delegation amount{" "}
-                <input type="text" className="px-2 py-1" value={stakingAmountRaw} size={8} onChange={({ target: { value } }) => setStakingAmount(value)} /> ML
-              </div>
-              <div className="text-xs">Enter the amount of coins you plan to delegate to show the estimated APY</div>
+        {apyCalculator && (
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Your delegation amount</span>
+              <input 
+                type="text" 
+                className="px-3 py-1 border border-gray-300 rounded-md w-20 text-center" 
+                value={stakingAmountRaw} 
+                onChange={({ target: { value } }) => setStakingAmount(value)} 
+              />
+              <span className="text-sm">{coin}</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-1 text-right">
+              Enter delegation amount to show estimated APY
             </div>
           </div>
-        ) : (
-          <></>
         )}
       </div>
 
-      <div className="mt-5 md:hidden">
-        <div>Sort by</div>
-        <div className="flex flex-wrap">
+      {/* Mobile Sort Controls */}
+      <div className="md:hidden mb-6">
+        <div className="text-sm font-medium mb-2">Sort by</div>
+        <div className="flex flex-wrap gap-2">
           {[
             { field: "apy", label: "APY" },
             { field: "reward_per_day_delegator", label: "Reward" },
@@ -723,392 +783,486 @@ export function Table() {
             return (
               <button
                 key={field}
-                className="inline-flex mr-2 my-1 items-center rounded-xl bg-primary-100 text-white px-4 py-2"
+                className={`inline-flex items-center rounded-lg px-3 py-2 text-sm transition-colors ${
+                  orderField === field 
+                    ? 'bg-primary-100 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
                 onClick={handleSort(field, order === "asc" ? "desc" : "asc")}
               >
-                {orderField === field ? <Image alt="" className="w-4 h-4" src={check_icon} /> : ""} {label}{" "}
-                {orderField === field ? (order === "desc" ? "↓" : "↑") : ""}
+                {orderField === field && <Image alt="" className="w-4 h-4 mr-1" src={check_icon} />}
+                {label}
+                {orderField === field && (order === "desc" ? " ↓" : " ↑")}
               </button>
             );
           })}
         </div>
       </div>
 
-      <table className="w-full mt-10">
-        <thead className="hidden md:table-header-group sticky top-[72px] bg-white z-10">
-          <tr>
-            <th className="px-2 py-2 text-left sticky left-0 ">Pool address</th>
-            {apyCalculator && stakingAmount > 0 ? (
-              <th>
-                <span
-                  onClick={handleSort("reward_per_day_delegator", "asc")}
-                  className="cursor-pointer font-normal"
-                  data-tooltip-id="tooltip"
-                  data-tooltip-content={`Sort ascending`}
-                >
-                  ↑
-                </span>
-                <span
-                  onClick={handleSort("reward_per_day_delegator", "desc")}
-                  className="cursor-pointer font-normal"
-                  data-tooltip-id="tooltip"
-                  data-tooltip-content={`Sort descending`}
-                >
-                  ↓
-                </span>
+      {/* Legend for Mobile */}
+      <div className="md:hidden mb-4 p-3 bg-gray-50 rounded-md">
+        <div className="text-sm font-medium mb-2">Legend:</div>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <Image className="w-4 h-4" src={icon_coin} alt="" />
+            <span>Cost per block</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Image className="w-4 h-4" src={icon_time} alt="" />
+            <span>Commission rate</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Image className="w-4 h-4" src={icon_block} alt="" />
+            <span>Time to find block</span>
+          </div>
+        </div>
+      </div>
 
-                <span data-tooltip-id="tooltip" data-tooltip-content={`Average coins per day`}>
-                  {coin}
-                </span>
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead className="sticky top-[72px] bg-white z-10 border-b border-gray-200">
+            <tr className="hidden md:table-row">
+              {/* Pool Address */}
+              <th className="text-left py-4 px-3 font-medium text-gray-700 w-1/6">
+                <div className="flex items-center gap-1">
+                  <span>Pool address</span>
+                </div>
               </th>
-            ) : (
-              <></>
-            )}
-            {apyCalculator && stakingAmount > 0 ? (
-              <th>
-                <span
-                  onClick={handleSort("apy", "asc")}
-                  className="cursor-pointer font-normal"
-                  data-tooltip-id="tooltip"
-                  data-tooltip-content={`Sort ascending`}
-                >
-                  ↑
-                </span>
-                <span
-                  onClick={handleSort("apy", "desc")}
-                  className="cursor-pointer font-normal"
-                  data-tooltip-id="tooltip"
-                  data-tooltip-content={`Sort descending`}
-                >
-                  ↓
-                </span>
-                APY
-              </th>
-            ) : (
-              <></>
-            )}
-
-            <th className="px-2 py-2 text-right w-20">
-              <span
-                onClick={handleSort("hours_for_block", "asc")}
-                className="cursor-pointer font-normal"
-                data-tooltip-id="tooltip"
-                data-tooltip-content={`Sort ascending`}
-              >
-                ↑
-              </span>
-              <span
-                onClick={handleSort("hours_for_block", "desc")}
-                className="cursor-pointer font-normal"
-                data-tooltip-id="tooltip"
-                data-tooltip-content={`Sort descending`}
-              >
-                ↓
-              </span>
-
-              <span data-tooltip-id="tooltip" data-tooltip-content={`Average time to find 1 block`}>
-                <Image className="inline" src={icon_time} alt="" />
-              </span>
-            </th>
-            <th className="px-2 py-2 text-right w-30">
-              <span
-                onClick={handleSort("cost_per_block", "asc")}
-                className="cursor-pointer font-normal"
-                data-tooltip-id="tooltip"
-                data-tooltip-content={`Sort ascending`}
-              >
-                ↑
-              </span>
-              <span
-                onClick={handleSort("cost_per_block", "desc")}
-                className="cursor-pointer font-normal"
-                data-tooltip-id="tooltip"
-                data-tooltip-content={`Sort descending`}
-              >
-                ↓
-              </span>
-              <span data-tooltip-id="tooltip" data-tooltip-content={`Cost per block. How much a pool takes ML of the reward before splitting`}>
-                <Image className="inline" src={icon_coin} alt="" />
-              </span>
-            </th>
-            <th className="px-2 py-2 text-right w-20">
-              <span
-                onClick={handleSort("margin_ratio", "asc")}
-                className="cursor-pointer font-normal"
-                data-tooltip-id="tooltip"
-                data-tooltip-content={`Sort ascending`}
-              >
-                ↑
-              </span>
-              <span
-                onClick={handleSort("margin_ratio", "desc")}
-                className="cursor-pointer font-normal"
-                data-tooltip-id="tooltip"
-                data-tooltip-content={`Sort descending`}
-              >
-                ↓
-              </span>
-              <span data-tooltip-id="tooltip" data-tooltip-content={`% of the reward after fixed pool cost per block goes to the delegators`}>
-                <Image className="inline" src={icon_time} alt="" />
-              </span>
-            </th>
-            <th className="px-2 py-2 text-right"></th>
-            <th className="px-2 py-2 text-right">
-              <span
-                onClick={handleSort("balance", "asc")}
-                data-tooltip-id="tooltip"
-                data-tooltip-content={`Sort ascending`}
-                className="cursor-pointer font-normal"
-              >
-                ↑
-              </span>
-              <span
-                onClick={handleSort("balance", "desc")}
-                data-tooltip-id="tooltip"
-                data-tooltip-content={`Sort descending`}
-                className="cursor-pointer font-normal"
-              >
-                ↓
-              </span>
-              <span data-tooltip-id="tooltip" data-tooltip-content={`Total balance of the pool consists of the pool pledge and the delegations`}>
-                Total Balance
-              </span>
-            </th>
-            {detected && (
-              <th className="px-2 py-2 text-right">
-                <span
-                  onClick={handleSort("delegation_balance", "asc")}
-                  data-tooltip-id="tooltip"
-                  data-tooltip-content={`Sort ascending`}
-                  className="cursor-pointer font-normal"
-                >
-                  ↑
-                </span>
-                <span
-                  onClick={handleSort("delegation_balance", "desc")}
-                  data-tooltip-id="tooltip"
-                  data-tooltip-content={`Sort descending`}
-                  className="cursor-pointer font-normal"
-                >
-                  ↓
-                </span>
-                <span data-tooltip-id="tooltip" data-tooltip-content={`Your stake in this pool`}>
-                  Your Stake
-                </span>
-              </th>
-            )}
-            {detected && <th></th>}
-          </tr>
-        </thead>
-        <tbody className="flex flex-col md:table-row-group">
-          {pools
-            .map(injectApy(stakingAmount))
-            .map(injectDelegations(delegations))
-            ?.sort(sorter)
-            .filter(filterer)
-            .map((value: any, i: number) => {
-              const { apy, reward_per_day_pool, reward_per_day_delegator, part_label, hours_for_block } = value;
-
-              return (
-                <tr key={"s" + i} className={`grid grid-cols-5 gap-0 h-full ${detected && value.delegation_exists ? 'bg-blue-50 border-blue-200' : 'bg-white'} hover:bg-gray-50 group border mb-3 md:table-row`}>
-                  <td className=" sticky left-0 bg-white  col-start-1 col-end-6 row-start-1 row-end-2 px-2 py-2 font-mono hover:text-primary-100 w-full">
-                    <div className="flex items-center gap-2">
-                      <Link href={"/pool/" + value.pool_id}>
-                        {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}
-                      </Link>
-                      <span
-                        className="cursor-pointer md:opacity-5 group-hover:opacity-100"
-                        data-tooltip-id="tooltip"
-                        data-tooltip-content={copy[value.pool_id] ? "Copied" : "Click to copy pool address"}
-                        onClick={handleCopy(value.pool_id)}
-                      >
-                        <Image className="inline" src={copy_icon} alt="" />
-                      </span>
-                    </div>
-                  </td>
-                  {apyCalculator && stakingAmount > 0 ? (
-                    <td className="col-start-1 col-end-3 row-start-2 row-end-3 md:border-l px-2 py-2 text-right tabular-nums  hidden md:table-cell">
-                      <span className="md:hidden text-sm">Reward</span>
-                      <div
-                        className="whitespace-nowrap"
-                        data-tooltip-id="tooltip-multiline"
-                        data-tooltip-content={`${`Total ML for the pool: ${reward_per_day_pool.toFixed(0)} ML/day`}\n${`Your part in the pool: ${part_label}%`}\n${`You get ${reward_per_day_delegator.toFixed(2)} ML/day.`}`}
-                      >
-                        {reward_per_day_delegator.toFixed(2)} ML
-                      </div>
-                    </td>
-                  ) : (
-                    <></>
-                  )}
-                  {apyCalculator && stakingAmount > 0 ? (
-                    <td
-                      className="col-start-1 col-end-3 row-start-2 row-end-3 md:border-l px-2 py-2 text-right tabular-nums"
-                      data-tooltip-id="tooltip"
-                      data-tooltip-content={`Your estimated APY for this pool by delegating ${stakingAmount} ${coin}`}
-                    >
-                      <span className="md:hidden text-sm">APY</span>
-                      <div className="whitespace-nowrap">{apy.toFixed(2)}%</div>
-                    </td>
-                  ) : (
-                    <></>
-                  )}
-                  <td className="md:border-l whitespace-nowrap px-2 py-2 tabular-nums text-right hidden md:table-cell">
+              
+              {/* TML/ML Amount */}
+              {apyCalculator && stakingAmount > 0 && (
+                <th className="text-right py-4 px-3 font-medium text-gray-700 w-1/8">
+                  <div className="flex items-center justify-end gap-1">
                     <span
-                      className="hpb"
+                      onClick={handleSort("reward_per_day_delegator", "asc")}
+                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
                       data-tooltip-id="tooltip"
-                      data-tooltip-content={`On average, it takes ${forPopup(hoursToTimeFormatWithMinutes(hours_for_block))} to find 1 block`}
+                      data-tooltip-content="Sort ascending"
                     >
-                      {forTable(hoursToTimeFormatWithMinutes(hours_for_block))}
+                      ↑
                     </span>
-                  </td>
-                  <td className="col-start-3 col-end-5 row-start-2 row-end-3 md:border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
-                    <span className="md:hidden text-sm">Cost per block</span>
-                    <div>
-                      <span
-                        className="hpb"
-                        data-tooltip-id="tooltip"
-                        data-tooltip-content={`Pool takes ${value?.cost_per_block} ${coin} of the reward before splitting`}
-                      >
-                        {value?.cost_per_block + " " + coin}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="col-start-5 col-end-6 row-start-2 row-end-3 md:border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
-                    <span className="md:hidden text-sm">Margin</span>
-                    <div>
-                      <span
-                        className="px-2"
-                        data-tooltip-id="tooltip"
-                        data-tooltip-content={`${((1 - value.margin_ratio) * 100).toFixed(1)}% of the reward after fixed pool reward goes to the delegators`}
-                      >
-                        {(value.margin_ratio * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="col-start-1 col-end-4 row-start-3 row-end-4 md:border-l whitespace-nowrap px-2 py-2 md:w-32 tabular-nums text-right">
-                    <div className="flex flex-row items-end gap-0">
-                      <div className="relative w-full md:w-[150px]">
-                        <span className="md:hidden text-sm">Saturation</span>
-                        <div className={`overflow-hidden h-4 text-xs flex ${value.balance > 600000 ? "rounded-l" : "rounded"} bg-emerald-200`}>
-                          <div
-                            style={{
-                              width: (value.staker_balance / 600000) * 100 + "%",
-                            }}
+                    <span
+                      onClick={handleSort("reward_per_day_delegator", "desc")}
+                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      data-tooltip-id="tooltip"
+                      data-tooltip-content="Sort descending"
+                    >
+                      ↓
+                    </span>
+                    <span>{coin}</span>
+                  </div>
+                </th>
+              )}
+              
+              {/* APY */}
+              {apyCalculator && stakingAmount > 0 && (
+                <th className="text-right py-4 px-3 font-medium text-gray-700 w-1/8">
+                  <div className="flex items-center justify-end gap-1">
+                    <span
+                      onClick={handleSort("apy", "asc")}
+                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      data-tooltip-id="tooltip"
+                      data-tooltip-content="Sort ascending"
+                    >
+                      ↑
+                    </span>
+                    <span
+                      onClick={handleSort("apy", "desc")}
+                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      data-tooltip-id="tooltip"
+                      data-tooltip-content="Sort descending"
+                    >
+                      ↓
+                    </span>
+                    <span>APY</span>
+                  </div>
+                </th>
+              )}
+
+              {/* Time */}
+              <th className="text-right py-4 px-3 font-medium text-gray-700 w-1/8">
+                <div className="flex items-center justify-end gap-1">
+                  <span
+                    onClick={handleSort("hours_for_block", "asc")}
+                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    data-tooltip-id="tooltip"
+                    data-tooltip-content="Sort ascending"
+                  >
+                    ↑
+                  </span>
+                  <span
+                    onClick={handleSort("hours_for_block", "desc")}
+                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    data-tooltip-id="tooltip"
+                    data-tooltip-content="Sort descending"
+                  >
+                    ↓
+                  </span>
+                  <Image className="w-4 h-4" src={icon_time} alt="" />
+                </div>
+              </th>
+
+              {/* Commission */}
+              <th className="text-right py-4 px-3 font-medium text-gray-700 w-1/8">
+                <div className="flex items-center justify-end gap-1">
+                  <span
+                    onClick={handleSort("margin_ratio", "asc")}
+                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    data-tooltip-id="tooltip"
+                    data-tooltip-content="Sort ascending"
+                  >
+                    ↑
+                  </span>
+                  <span
+                    onClick={handleSort("margin_ratio", "desc")}
+                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    data-tooltip-id="tooltip"
+                    data-tooltip-content="Sort descending"
+                  >
+                    ↓
+                  </span>
+                  <span>%</span>
+                </div>
+              </th>
+
+              {/* Total Balance */}
+              <th className="text-right py-4 px-3 font-medium text-gray-700 w-1/6">
+                <div className="flex items-center justify-end gap-1">
+                  <span
+                    onClick={handleSort("balance", "asc")}
+                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    data-tooltip-id="tooltip"
+                    data-tooltip-content="Sort ascending"
+                  >
+                    ↑
+                  </span>
+                  <span
+                    onClick={handleSort("balance", "desc")}
+                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    data-tooltip-id="tooltip"
+                    data-tooltip-content="Sort descending"
+                  >
+                    ↓
+                  </span>
+                  <span>Total Balance</span>
+                </div>
+              </th>
+
+              {/* Your Stake */}
+              {detected && (
+                <th className="text-right py-4 px-3 font-medium text-gray-700 w-1/6">
+                  <div className="flex items-center justify-end gap-1">
+                    <span
+                      onClick={handleSort("delegation_balance", "asc")}
+                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      data-tooltip-id="tooltip"
+                      data-tooltip-content="Sort ascending"
+                    >
+                      ↑
+                    </span>
+                    <span
+                      onClick={handleSort("delegation_balance", "desc")}
+                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      data-tooltip-id="tooltip"
+                      data-tooltip-content="Sort descending"
+                    >
+                      ↓
+                    </span>
+                    <span>Your Stake</span>
+                  </div>
+                </th>
+              )}
+
+              {/* Actions */}
+              {detected && (
+                <th className="text-center py-4 px-3 font-medium text-gray-700 w-1/8">
+                  Actions
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {pools
+              .map(injectApy(stakingAmount))
+              .map(injectDelegations(delegations))
+              .sort(sorter)
+              .filter(filterer)
+              .map((value: any, i: number) => {
+                const { apy, reward_per_day_pool, reward_per_day_delegator, part_label, hours_for_block } = value;
+
+                return (
+                  <tr 
+                    key={"pool-" + i} 
+                    className={`
+                      ${detected && value.delegation_exists ? 'bg-blue-50' : 'bg-white'} 
+                      hover:bg-gray-50 transition-colors border-b border-gray-100
+                      md:table-row flex flex-col md:flex-none p-4 md:p-0 mb-4 md:mb-0 rounded-lg md:rounded-none shadow md:shadow-none
+                    `}
+                  >
+                    {/* Pool Address */}
+                    <td className="py-3 px-3 md:w-1/6">
+                      <div className="flex flex-col md:flex-row md:items-center gap-2">
+                        <div className="md:hidden text-xs font-medium text-gray-500 uppercase">Pool Address</div>
+                        <div className="flex items-center gap-2">
+                          <Link 
+                            href={"/pool/" + value.pool_id}
+                            className="font-mono text-primary-100 hover:text-primary-110 text-sm md:text-base"
+                          >
+                            <span className="hidden md:inline">
+                              {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}
+                            </span>
+                            <span className="md:hidden">
+                              {value.pool_id.slice(0, 8)}...{value.pool_id.slice(-8)}
+                            </span>
+                          </Link>
+                          <span
+                            className="cursor-pointer opacity-60 hover:opacity-100"
                             data-tooltip-id="tooltip"
-                            data-tooltip-content={`Pool pledge ML amount: ${formatML(value.staker_balance, 0) + " " + coin}`}
-                            className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-110"
-                          ></div>
-                          <div
-                            style={{
-                              width: (value.delegations_amount / 600000) * 100 + "%",
-                            }}
-                            data-tooltip-id="tooltip"
-                            data-tooltip-content={`Delegations balance: ${formatML((value.balance - value.staker_balance).toString(), 0) + " " + coin}`}
-                            className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-100"
-                          ></div>
-                          <div data-tooltip-id="tooltip" data-tooltip-content={`Free space`} className="w-auto"></div>
+                            data-tooltip-content={copy[value.pool_id] ? "Copied" : "Click to copy pool address"}
+                            onClick={handleCopy(value.pool_id)}
+                          >
+                            <Image className="w-4 h-4" src={copy_icon} alt="" />
+                          </span>
                         </div>
                       </div>
-                      {value.balance > 600000 ? (
-                        <div className="hpb" data-tooltip-id="tooltip" data-tooltip-content={`Oversaturated pool`}>
-                          <span className={`block w-3 h-4 rounded-r relative z-2 bg-red-400`}></span>
+                    </td>
+
+                    {/* TML/ML Amount */}
+                    {apyCalculator && stakingAmount > 0 && (
+                      <td className="py-2 px-3 text-right md:w-1/8">
+                        <div className="flex flex-col md:block">
+                          <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Daily Reward</div>
+                          <div 
+                            className="font-mono"
+                            data-tooltip-id="tooltip-multiline"
+                            data-tooltip-content={`${`Total ${coin} for the pool: ${reward_per_day_pool.toFixed(0)} ${coin}/day`}\n${`Your part in the pool: ${part_label}%`}\n${`You get ${reward_per_day_delegator.toFixed(2)} ${coin}/day.`}`}
+                          >
+                            {reward_per_day_delegator.toFixed(2)} {coin}
+                          </div>
                         </div>
-                      ) : (
-                        <></>
-                      )}
-                    </div>
-                  </td>
-                  <td className="col-start-4 col-end-6 row-start-3 row-end-4 md:border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
-                    <span className="md:hidden text-sm">Total balance</span>
-                    <div className="flex flex-row justify-end items-center">
-                      <span
-                        className="hpb"
-                        data-tooltip-id="tooltip"
-                        data-tooltip-content={`Total balance of the pool consists of the pool pledge and the delegations`}
-                      >
-                        {formatML(value.balance, 0) + " " + coin}
-                      </span>
-                      <span
-                        className={"cursor-pointer inline-flex justify-center items-center text-sm bg-primary-110 text-white rounded-full ml-1 w-4 h-4"}
-                        data-tooltip-id="tooltip-multiline"
-                        data-tooltip-content={`Effective balance: ${formatML(value.effective_pool_balance)} ${coin} \nThe effective balance is a value proportional to the balance, \nwhich has properties that prevent centralization of pools`}
-                      >
-                        ?
-                      </span>
-                    </div>
-                  </td>
-                  {detected && (
-                    <td className="border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
-                      <span className="md:hidden text-sm">Your Stake</span>
-                      <div className="flex flex-col items-end">
-                        {value?.delegation_balance > 0 ? (
-                          <div>
-                            <div className="font-semibold text-primary-100">
-                              {formatML(value.delegation_balance)} {coin}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {value.delegation_count} delegation{value.delegation_count > 1 ? 's' : ''}
+                      </td>
+                    )}
+
+                    {/* APY */}
+                    {apyCalculator && stakingAmount > 0 && (
+                      <td className="py-2 px-3 text-right md:w-1/8">
+                        <div className="flex flex-col md:block">
+                          <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">APY</div>
+                          <div 
+                            className="font-bold text-primary-100"
+                            data-tooltip-id="tooltip"
+                            data-tooltip-content={`Your estimated APY for this pool by delegating ${stakingAmount} ${coin}`}
+                          >
+                            {apy.toFixed(2)}%
+                          </div>
+                        </div>
+                      </td>
+                    )}
+
+                    {/* Time */}
+                    <td className="py-2 px-3 text-right md:w-1/8">
+                      <div className="flex flex-col md:block">
+                        <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Block Time</div>
+                        <div 
+                          className="font-mono text-sm"
+                          data-tooltip-id="tooltip"
+                          data-tooltip-content={`On average, it takes ${forPopup(hoursToTimeFormatWithMinutes(hours_for_block))} to find 1 block`}
+                        >
+                          {forTable(hoursToTimeFormatWithMinutes(hours_for_block))}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Commission */}
+                    <td className="py-2 px-3 text-right md:w-1/8">
+                      <div className="flex flex-col md:block">
+                        <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Commission</div>
+                        <div 
+                          className="font-mono"
+                          data-tooltip-id="tooltip"
+                          data-tooltip-content={`${((1 - value.margin_ratio) * 100).toFixed(1)}% of the reward after fixed pool reward goes to the delegators`}
+                        >
+                          {(value.margin_ratio * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Total Balance */}
+                    <td className="py-2 px-3 text-right md:w-1/6">
+                      <div className="flex flex-col">
+                        <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-2">Total Balance</div>
+                        
+                        {/* Progress Bar */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex-1 relative">
+                            <div className={`overflow-hidden h-3 text-xs flex ${value.balance > 600000 ? "rounded-l-md" : "rounded-md"} bg-emerald-200`}>
+                              <div
+                                style={{
+                                  width: Math.min((value.staker_balance / 600000) * 100, 100) + "%",
+                                }}
+                                data-tooltip-id="tooltip"
+                                data-tooltip-content={`Pool pledge amount: ${formatML(value.staker_balance, 0)} ${coin}`}
+                                className="bg-primary-110"
+                              ></div>
+                              <div
+                                style={{
+                                  width: Math.min((value.delegations_amount / 600000) * 100, 100 - (value.staker_balance / 600000) * 100) + "%",
+                                }}
+                                data-tooltip-id="tooltip"
+                                data-tooltip-content={`Delegations balance: ${formatML((value.balance - value.staker_balance).toString(), 0)} ${coin}`}
+                                className="bg-primary-100"
+                              ></div>
                             </div>
                           </div>
-                        ) : (
-                          <div className="text-gray-400">-</div>
-                        )}
+                          {value.balance > 600000 && (
+                            <div 
+                              className="w-3 h-3 rounded-r-md bg-red-400"
+                              data-tooltip-id="tooltip" 
+                              data-tooltip-content="Oversaturated pool"
+                            ></div>
+                          )}
+                        </div>
+                        
+                        {/* Balance Amount */}
+                        <div className="flex items-center justify-end gap-1">
+                          <span 
+                            className="font-mono text-sm"
+                            data-tooltip-id="tooltip"
+                            data-tooltip-content="Total balance of the pool consists of the pool pledge and the delegations"
+                          >
+                            {formatML(value.balance, 0)} {coin}
+                          </span>
+                          <span
+                            className="cursor-pointer inline-flex justify-center items-center text-xs bg-primary-110 text-white rounded-full w-4 h-4"
+                            data-tooltip-id="tooltip-multiline"
+                            data-tooltip-content={`Effective balance: ${formatML(value.effective_pool_balance)} ${coin} \nThe effective balance is a value proportional to the balance, \nwhich has properties that prevent centralization of pools`}
+                          >
+                            ?
+                          </span>
+                        </div>
                       </div>
                     </td>
-                  )}
-                  {detected && (
-                    <td className="border-l whitespace-nowrap px-2 py-2 tabular-nums text-right">
-                      <div className="flex flex-col gap-1">
-                        <button
-                          data-tooltip-id="tooltip"
-                          data-tooltip-content={value?.delegation_exists ? "Add funds to existing delegation" : "Create new delegation in this pool"}
-                          className="bg-primary-100 hover:bg-primary-110 px-2 py-1 text-white rounded text-sm"
-                          onClick={() => handleStackPool(value.balance, value.pool_id, value?.delegation_exists, value)}
-                        >
-                          {value?.delegation_exists ? 'Add Coins' : 'Join'}
-                        </button>
-                        {value?.delegation_balance > 0 && (
+
+                    {/* Your Stake */}
+                    {detected && (
+                      <td className="py-2 px-3 text-right md:w-1/6">
+                        <div className="flex flex-col">
+                          <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Your Stake</div>
+                          {value?.delegation_balance > 0 ? (
+                            <div>
+                              <div className="font-bold text-primary-100 font-mono">
+                                {formatML(value.delegation_balance)} {coin}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {value.delegation_count} delegation{value.delegation_count > 1 ? 's' : ''}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-gray-400">-</div>
+                          )}
+                        </div>
+                      </td>
+                    )}
+
+                    {/* Actions */}
+                    {detected && (
+                      <td className="py-2 px-3 text-center md:w-1/8">
+                        <div className="flex flex-col md:flex-col gap-2">
+                          <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Actions</div>
+                          
                           <button
                             data-tooltip-id="tooltip"
-                            data-tooltip-content="Withdraw from this pool"
-                            className="bg-red-500 hover:bg-red-600 px-2 py-1 text-white rounded text-sm"
-                            onClick={() => handleWithdrawPool(value.pool_id, value.delegation_balance)}
+                            data-tooltip-content={value?.delegation_exists ? "Add funds to existing delegation" : "Create new delegation in this pool"}
+                            className="bg-primary-100 hover:bg-primary-110 px-3 py-2 text-white rounded-md text-sm font-medium transition-colors"
+                            onClick={() => handleStackPool(value.balance, value.pool_id, value?.delegation_exists, value)}
                           >
-                            Withdraw
+                            {value?.delegation_exists ? 'Add Coins' : 'Join'}
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-        </tbody>
-      </table>
+                          
+                          {value?.delegation_balance > 0 && (
+                            <button
+                              data-tooltip-id="tooltip"
+                              data-tooltip-content="Withdraw from this pool"
+                              className="bg-red-500 hover:bg-red-600 px-3 py-2 text-white rounded-md text-sm font-medium transition-colors"
+                              onClick={() => handleWithdrawPool(value.pool_id, value.delegation_balance)}
+                            >
+                              Withdraw
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
 
-      {pools.length === 0 || !difficulty ? <div className="p-5 w-full text-center">Loading</div> : <></>}
+      {pools.length === 0 && difficulty === 0 ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-gray-500">Loading pools...</div>
+        </div>
+      ) : pools.length === 0 ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-gray-500">No pools available</div>
+          <div className="text-xs text-gray-400 mt-2">
+            Debug: pools.length={pools.length}, difficulty={difficulty}
+          </div>
+        </div>
+      ) : pools.filter((item: any) => {
+          // Apply same filtering logic  
+          if (hideNonProfitPools) {
+            if (item.margin_ratio === 1) return false;
+            if (item.cost_per_block >= block_subsidy_at_height(blockHeight)) return false;
+          }
+          if (showOnlyMyPools && detected) {
+            const hasDeleg = delegations.some((d: any) => d.pool_id === item.pool_id);
+            if (!hasDeleg) return false;
+          }
+          return true;
+        }).length === 0 ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-gray-500">No pools match the selected filters</div>
+          <div className="text-xs text-gray-400 mt-2">
+            Debug: pools.length={pools.length}, hideNonProfitPools={hideNonProfitPools}, showOnlyMyPools={showOnlyMyPools}, detected={detected}
+          </div>
+          <button 
+            onClick={() => {
+              setHideNonProfitPools(true);
+              setShowOnlyMyPools(false);
+            }}
+            className="ml-4 text-primary-100 hover:text-primary-110 underline text-sm"
+          >
+            Reset filters
+          </button>
+        </div>
+      ) : (
+        <></>
+      )}
     </>
   );
 }
 
-function forTable({ d, h, m }: any) {
+function forTable({ d, h, m }: { d: number; h: number; m: number }) {
   if (d > 100) {
-    return <div className="w-[50px]"></div>;
+    return <div className="w-[60px] text-center">-</div>;
   }
   return (
-    <div className="flex gap-1 justify-end items-end">
-      {d > 0 ? <div>{d}d</div> : <></>}
-      {h > 0 ? <div>{h}h</div> : <></>}
-      {m > 0 ? <div>{m}m</div> : <></>}
+    <div className="flex gap-1 justify-end items-center text-xs">
+      {d > 0 && <span>{d}d</span>}
+      {h > 0 && <span>{h}h</span>}
+      {m > 0 && <span>{m}m</span>}
     </div>
   );
 }
 
-function forPopup({ d, h, m }: any) {
+function forPopup({ d, h, m }: { d: number; h: number; m: number }) {
   return `${d > 0 ? `${d} day${d > 1 ? "s" : ""} ` : ""}${h > 0 ? `${h} hour${h > 1 ? "s" : ""} ` : ""}${m === 1 ? `${m} minute ` : ""}${m > 1 ? `${m} minutes ` : ""}`;
 }
 
-function hoursToTimeFormatWithMinutes(hours: any) {
+function hoursToTimeFormatWithMinutes(hours: number) {
   const d = Math.floor(hours / 24);
   const h = Math.floor(hours % 24);
   const m = Math.floor((hours % 1) * 60);

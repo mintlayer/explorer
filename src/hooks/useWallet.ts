@@ -21,10 +21,14 @@ export function useWallet() {
   }, []);
 
   const handleDelegate = async (pool_id: string) => {
+    if (!client) {
+      throw new Error('Wallet client not available');
+    }
+    
     const destination = await client.getAddresses();
     const t = await client.delegationCreate({ pool_id: pool_id, destination: destination?.receiving[0] });
 
-    const { tx_id } = client?.broadcastTx(t);
+    const { tx_id } = await client.broadcastTx(t);
 
     return tx_id;
   };
@@ -121,6 +125,12 @@ export function useWallet() {
     }
   };
 
+  const handleDisconnect = () => {
+    setDetected(false);
+    setBalance(0);
+    setDelegations([]);
+  };
+
   return {
     detected,
     balance,
@@ -128,6 +138,7 @@ export function useWallet() {
     handleAddFunds,
     handleWithdraw,
     handleConnect,
+    handleDisconnect,
     delegations,
     refreshDelegations,
   };

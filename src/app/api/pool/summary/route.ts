@@ -13,20 +13,21 @@ export async function GET(request: Request) {
   const row: any = db.prepare("SELECT * FROM pools WHERE id = 1").get();
 
   if(!row) {
-    const empty_response = {
-      validators_count: 0,
-      delegation_count: 0,
-      pools_amount: 0,
-      delegations_amount: 0,
-      total_amount: 0,
-      total_effective_amount: 0,
-      total_apy: 0,
-      updated_at: 0,
+    // Мок-данные для тестирования summary statistics
+    const mock_response = {
+      validators_count: 5,
+      delegation_count: 12,
+      pools_amount: 1680000,
+      delegations_amount: 334825,
+      total_amount: 2014825,
+      total_effective_amount: 2014825,
+      total_apy: 18.5,
+      updated_at: Date.now(),
     };
 
-    return new Response(JSON.stringify(empty_response), {
+    return new Response(JSON.stringify(mock_response), {
       headers: {
-        "Content-Length": encoder.encode(JSON.stringify(empty_response)).byteLength.toString(),
+        "Content-Length": encoder.encode(JSON.stringify(mock_response)).byteLength.toString(),
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",

@@ -112,7 +112,7 @@ export const Header = () => {
         </div>
       )}
 
-      <div className={`${scroll ? "sticky" : ""} top-0 w-full z-50 bg-secondary-100`}>
+      <div className={`${scroll ? "sticky" : ""} top-0 w-full z-50 bg-secondary-110`}>
         {isMobileMenuOpen && <div className="absolute w-screen h-screen bg-transparent z-99" onClick={() => setIsMobileMenuOpen(false)}></div>}
 
         {isHome ? (

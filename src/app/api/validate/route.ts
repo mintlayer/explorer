@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 const ADDRESS_REGEX = /^mm?tc1[a-zA-Z0-9]{40}$/;
 
 // Define the response types based on Micro3 documentation
