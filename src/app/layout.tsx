@@ -22,8 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PublicEnvScript />
       </head>
       <body className={`${inter.className} flex flex-col min-h-screen`}>
-        <Tooltip id="tooltip" place="top" className="z-40" />
-        <Tooltip id="tooltip-multiline" className="z-40 whitespace-pre" />
+        <Tooltip id="tooltip" place="top" className="z-[110]" />
+        <Tooltip id="tooltip-multiline" className="z-[110] whitespace-pre" />
         <NetworkProvider>
           <Header />
           {children}

@@ -24,7 +24,7 @@ export function WalletConnect({ handleConnect, handleDisconnect, detected, deleg
                 data-tooltip-id="tooltip"
                 data-tooltip-content="Mojito Wallet is available for Chrome"
                 href="https://chromewebstore.google.com/detail/mojito-a-mintlayer-wallet/hbnpcbochkgodkmmicbhfpmmkhbfbhim"
-                className="bg-[rgba(17,150,127,1)] hover:bg-[rgba(13,118,100,1)] text-white text-base px-3 py-1 inline-flex gap-2 rounded-md transition-colors"
+                className="bg-[#94A4A1] hover:bg-[#7A8B87] text-[#FFFFFF] text-base px-3 py-1 inline-flex gap-2 rounded-md transition-colors"
               >
                 Download for <Image width={24} height={24} src={icon_chrome} alt="" />
               </Link>
@@ -33,7 +33,7 @@ export function WalletConnect({ handleConnect, handleDisconnect, detected, deleg
                 data-tooltip-id="tooltip"
                 data-tooltip-content="Mojito Wallet is also available for Firefox"
                 href="https://addons.mozilla.org/en-US/firefox/addon/mojito-a-mintlayer-wallet/"
-                className="bg-[rgba(17,150,127,1)] hover:bg-[rgba(13,118,100,1)] text-white text-base px-3 py-1 inline-flex gap-2 rounded-md transition-colors"
+                className="bg-[#94A4A1] hover:bg-[#7A8B87] text-[#FFFFFF] text-base px-3 py-1 inline-flex gap-2 rounded-md transition-colors"
               >
                 Download for <Image width={24} height={24} src={icon_firefox} alt="" />
               </Link>
@@ -43,7 +43,7 @@ export function WalletConnect({ handleConnect, handleDisconnect, detected, deleg
               <button
                 data-tooltip-id="tooltip"
                 data-tooltip-content="If the wallet is installed but not automatically detected, click 'connect'."
-                className="bg-white hover:bg-[rgba(17,150,127,1)] border border-gray-200 hover:border-[rgba(17,150,127,1)] text-[rgba(17,150,127,1)] hover:text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"
+                className="bg-[#F3F4F6] hover:bg-[#E5E7EB] border border-gray-200 hover:border-gray-300 text-[#4B5563] hover:text-[#374151] px-4 py-2 rounded-lg font-medium transition-all duration-200"
                 onClick={handleConnect}
               >
                 Connect Wallet
@@ -110,7 +110,7 @@ export function WalletConnect({ handleConnect, handleDisconnect, detected, deleg
                 </svg>
               </div>
               <h3 className="text-sm font-bold text-[rgba(17,150,127,1)]">
-                Next Step {delegations.length === 0 ? "Choose Pool" : "Manage Stakes"}
+                {delegations.length === 0 ? "Next Step Choose Pool" : "Manage Your Stakes"}
               </h3>
             </div>
             <div className="text-2xl font-bold text-transparent">
@@ -120,19 +120,12 @@ export function WalletConnect({ handleConnect, handleDisconnect, detected, deleg
             <p className="text-xs mt-1 text-[rgba(17,150,127,1)]">
               {delegations.length === 0 
                 ? "Browse pools below and press Join" 
-                : "Add or withdraw stake"}
+                : "Add or withdraw stake from your pools"}
             </p>
           </div>
         </div>
 
-        {/* Action message - only show for users with delegations */}
-        {delegations.length > 0 && (
-          <div className="text-center">
-            <div className="text-[rgba(17,150,127,1)] text-sm">
-              Use <strong>Add Coins</strong> or <strong>Withdraw</strong> buttons in the pools table
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );
