@@ -29,7 +29,7 @@ export const Modal = ({ active, setActive, children }: ModalProps) => {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 overflow-y-auto" onClick={() => setActive(false)}>
       <div className="flex min-h-screen items-center justify-center px-4 py-20">
-        <div className="w-full max-w-[650px] rounded-xl bg-white shadow-xl p-6" onClick={handleModalClick}>
+        <div className="w-full max-w-[630px] rounded-xl bg-white shadow-xl p-6" onClick={handleModalClick}>
           {children}
         </div>
       </div>

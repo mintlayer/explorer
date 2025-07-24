@@ -592,7 +592,8 @@ export function Table() {
           </div>
           <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
             <div
-              className="cursor-pointer p-2 rounded bg-primary-100 text-white"
+              className="cursor-pointer p-2 rounded text-white"
+              style={{ backgroundColor: 'rgba(17,150,127,1)' }}
               onClick={handleConfirmAddFunds}
             >
               Add Funds
