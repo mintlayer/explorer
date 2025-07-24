@@ -420,8 +420,8 @@ export function Table() {
       }, 0) || 0,
       delegation_count: poolDelegations.length,
       user_delegations: poolDelegations, // Store the actual delegation objects for detailed access
-    }
-  }
+    };
+  };
 
   return (
     <>
