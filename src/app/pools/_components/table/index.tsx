@@ -616,10 +616,27 @@ export function Table() {
             }
           }}
         >
-          <div className="text-xl font-semibold w-full">Join Pool</div>
-          <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
-            You are about to create a new delegation to this pool. This will create an empty delegation that you can add funds to later.
-          </p>
+          <div className="w-full">
+            {/* Header */}
+            <div className="text-center mb-4">
+              <div className="text-xl font-semibold w-full">Join Pool</div>
+              <p className="text-gray-500 text-xs" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                You are about to create a new delegation to this pool.
+              </p>
+              <p className="text-gray-500 text-xs" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                This will create an empty delegation that you can add funds to later.
+              </p>
+            </div>
+
+            {/* Pool ID */}
+            <div className="mb-4">
+              <div className="text-sm font-medium mb-2">Pool ID</div>
+              <div className="bg-white border border-gray-200 rounded overflow-x-auto py-2">
+                <div className="text-xs font-mono text-gray-800 whitespace-nowrap px-6" style={{ fontFamily: 'Monaco, Consolas, monospace' }}>
+                  {joinPoolData.pool_id}
+                </div>
+              </div>
+            </div>
 
           <div className="flex flex-col gap-4 py-4">
             {/* Pool Summary */}
@@ -703,9 +720,10 @@ export function Table() {
             <div
               className={`p-2 rounded text-white flex items-center justify-center gap-2 ${
                 isJoining
-                  ? 'bg-primary-100/70 cursor-not-allowed'
-                  : 'bg-primary-100 cursor-pointer hover:bg-primary-110'
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'cursor-pointer'
               }`}
+              style={!isJoining ? { backgroundColor: 'rgba(17,150,127,1)' } : {}}
               onClick={isJoining ? undefined : handleConfirmJoin}
             >
               {isJoining && (
@@ -729,6 +747,7 @@ export function Table() {
             >
               Cancel
             </div>
+          </div>
           </div>
         </Modal>
       )}
