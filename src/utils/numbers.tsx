@@ -2,7 +2,8 @@ export const formatML = (value: string, fraction = 2) => {
   const number = parseFloat(value);
 
   if (number < 1000) {
-    return value;
+    // Применяем округление даже для чисел меньше 1000
+    return number.toFixed(fraction);
   }
 
   const roundedNumber = Math.round(number * 100) / 100;

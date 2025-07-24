@@ -203,7 +203,7 @@ export const Search = () => {
 
   const isWrongQuery = query && getQueryType(query).length === 0;
   const inputWrapperClassName = classnames(
-    "flex items-center h-12 border-1 border-solid border-[#c9cccb]",
+    "flex items-center h-12 border-0",
     "py-3 px-6 bg-white box-border focus-within:border-1 focus-within:border-solid",
     "focus-within:outline-1 focus-within:outline",
     isWrongQuery ? "focus-within:border-red-600 focus-within:outline-red-600" : "focus-within:border-primary-100 focus-within:outline-primary-100",
@@ -236,14 +236,14 @@ export const Search = () => {
         {query.length > 0 && <Image src={close} className="cursor-pointer" onClick={handleReset} alt={""} />}
       </div>
       {query.length > 0 && (
-        <div className="absolute top-16 w-full border-2 border-secondary-110">
+        <div className="absolute top-16 w-full border-0">
           {mergedResults.length > 0 ? (
             mergedResults.map((result: any, index: number) => (
               <ResultItem key={"result" + index + query} result={result} query={query} onClick={onResultClick} skeleton={loading} />
             ))
           ) : (
-            <div className="cursor-pointer bg-white w-full border-solid border-b-4 border-b-red-600 shadow-search">
-              <div className="text-sm px-4 py-2 border-b-2 border-secondary-100 bg-white capitalize animate-pulse">Not found</div>
+            <div className="cursor-pointer bg-white w-full border-0 shadow-search">
+              <div className="text-sm px-4 py-2 border-0 bg-white capitalize animate-pulse">Not found</div>
               <div className="px-4 py-2 text-[14px] break-all">
                 The term “{query}”, is not a valid hash, transaction ID, contract principal, or account address principal
               </div>
@@ -261,8 +261,8 @@ function ResultItem({ result, query, onClick, skeleton }: any) {
   };
 
   return (
-    <div className="cursor-pointer bg-white w-full border-b-4 border-primary-100 hover:bg-secondary-100 shadow-search" onClick={handleOnClick}>
-      <div className="text-sm px-4 py-2 border-b-2 border-secondary-100 bg-white capitalize">{result.type}</div>
+    <div className="cursor-pointer bg-white w-full border-0 hover:bg-secondary-100 shadow-search" onClick={handleOnClick}>
+      <div className="text-sm px-4 py-2 border-0 bg-white capitalize">{result.type}</div>
       <div className="px-4 py-2 text-[14px]">
         <div className="grid-cols-2 grid gap-2 py-2">
           {result.data.map(({ icon, value }: any, index: number) => (

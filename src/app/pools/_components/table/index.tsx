@@ -420,8 +420,8 @@ export function Table() {
       }, 0) || 0,
       delegation_count: poolDelegations.length,
       user_delegations: poolDelegations, // Store the actual delegation objects for detailed access
-    };
-  };
+    }
+  }
 
   return (
     <>
@@ -437,7 +437,8 @@ export function Table() {
           </p>
           <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
             <div
-              className="cursor-pointer p-2 rounded bg-orange-500 text-white"
+              className="cursor-pointer p-2 rounded text-white"
+              style={{ backgroundColor: 'rgba(17,150,127,1)' }}
               onClick={() => {
                 setOpenModal(false);
                 handleDelegate(poolId);
@@ -455,13 +456,13 @@ export function Table() {
 
       {openWithdrawModal && (
         <Modal active={openWithdrawModal} setActive={setOpenWithdrawModal}>
-          <div className="text-xl font-semibold w-full">Withdraw from Pool</div>
+          <div className="text-xl font-semibold w-full">Unstake from Pool</div>
           <p className="relative py-5 text-base text-justify before:absolute before:w-full before:top-2 before:border-t-1">
-            You are about to withdraw from your delegation. Please note that withdrawn coins will have a 7200-block maturity period (approximately 10 days) before they become available.
+            You are about to unstake from your delegation. Please note that unstaked coins will have a 7200-block maturity period (approximately 10 days) before they become available.
           </p>
           <div className="flex flex-col gap-4 py-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Select Delegation to Withdraw From</label>
+              <label className="block text-sm font-medium mb-2">Select Delegation to Unstake From</label>
               <div className="space-y-2">
                 {poolDelegations.map((delegation, index) => (
                   <div
@@ -475,7 +476,7 @@ export function Table() {
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
-                        <div className="font-mono text-sm">
+                        <div className="text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                           {delegation.delegation_id.slice(0, 20)}...{delegation.delegation_id.slice(-10)}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
@@ -483,7 +484,7 @@ export function Table() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold">
+                        <div className="font-semibold text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                           {formatML(delegation.balance.decimal)} {coin}
                         </div>
                         <div className="text-xs text-gray-500">
@@ -497,7 +498,7 @@ export function Table() {
             </div>
             {selectedDelegation && (
               <div>
-                <label className="block text-sm font-medium mb-2">Amount to withdraw ({coin})</label>
+                <label className="block text-sm font-medium mb-2">Amount to unstake ({coin})</label>
                 <input
                   type="text"
                   value={withdrawAmount}
@@ -510,7 +511,7 @@ export function Table() {
                   Max available: {formatML(selectedDelegation.balance.decimal)} {coin}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Withdrawal destination: {selectedDelegation.spend_destination}
+                                      Unstaking destination: {selectedDelegation.spend_destination}
                 </div>
               </div>
             )}
@@ -520,7 +521,7 @@ export function Table() {
               className="cursor-pointer p-2 rounded bg-red-500 text-white"
               onClick={handleConfirmWithdraw}
             >
-              Confirm Withdrawal
+              Confirm Unstake
             </div>
             <div className="cursor-pointer p-2 rounded bg-gray-400 text-white" onClick={() => setOpenWithdrawModal(false)}>
               Cancel
@@ -551,7 +552,7 @@ export function Table() {
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
-                        <div className="font-mono text-sm">
+                        <div className="text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                           {delegation.delegation_id.slice(0, 20)}...{delegation.delegation_id.slice(-10)}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
@@ -559,7 +560,7 @@ export function Table() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold">
+                        <div className="font-semibold text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                           {formatML(delegation.balance.decimal)} {coin}
                         </div>
                         <div className="text-xs text-gray-500">
@@ -620,7 +621,9 @@ export function Table() {
           <div className="w-full">
             {/* Header */}
             <div className="text-center mb-4">
-              <div className="text-xl font-semibold w-full">Join Pool</div>
+              <h2 className="text-lg font-bold text-gray-900 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Join Pool
+              </h2>
               <p className="text-gray-500 text-xs" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 You are about to create a new delegation to this pool.
               </p>
@@ -629,126 +632,152 @@ export function Table() {
               </p>
             </div>
 
-            {/* Pool ID */}
-            <div className="mb-4">
-              <div className="text-sm font-medium mb-2">Pool ID</div>
-              <div className="bg-white border border-gray-200 rounded overflow-x-auto py-2">
-                <div className="text-xs font-mono text-gray-800 whitespace-nowrap px-6" style={{ fontFamily: 'Monaco, Consolas, monospace' }}>
-                  {joinPoolData.pool_id}
+            {/* Pool Summary Card */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Pool Information
+              </h3>
+              
+              {/* Pool ID */}
+              <div className="mb-3">
+                <div className="text-xs font-medium text-gray-600 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Pool ID
                 </div>
-              </div>
-            </div>
-
-          <div className="flex flex-col gap-4 py-4">
-            {/* Pool Summary */}
-            <div className="bg-gray-50 p-4 rounded-md">
-              <h3 className="font-semibold mb-3">Pool Summary</h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-gray-600">Pool ID:</span>
-                  <div className="font-mono text-xs mt-1">
-                    {joinPoolData.pool_id.slice(0, 20)}...{joinPoolData.pool_id.slice(-15)}
+                <div className="bg-white border border-gray-200 rounded overflow-x-auto py-2">
+                  <div className="text-xs font-mono text-gray-800 whitespace-nowrap px-6" style={{ fontFamily: 'Monaco, Consolas, monospace' }}>
+                    {joinPoolData.pool_id}
                   </div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Total Balance:</span>
-                  <div className="font-semibold mt-1">
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white border border-gray-200 rounded p-2">
+                  <div className="text-xs font-medium text-gray-600 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    Total Balance
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     {formatML(joinPoolData.balance, 0)} {coin}
                   </div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Cost per Block:</span>
-                  <div className="font-semibold mt-1">
+                
+                <div className="bg-white border border-gray-200 rounded p-2">
+                  <div className="text-xs font-medium text-gray-600 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    Cost per Block
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     {joinPoolData.cost_per_block} {coin}
                   </div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Margin Ratio:</span>
-                  <div className="font-semibold mt-1">
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white border border-gray-200 rounded p-2">
+                  <div className="text-xs font-medium text-gray-600 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    Margin Ratio
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     {(joinPoolData.margin_ratio * 100).toFixed(1)}%
                   </div>
                 </div>
+                
                 {apyCalculator && stakingAmount > 0 && (
-                  <>
-                    <div>
-                      <span className="text-gray-600">Estimated APY:</span>
-                      <div className="font-semibold mt-1 text-primary-100">
-                        {joinPoolData.apy?.toFixed(2)}%
-                      </div>
+                  <div className="bg-white border border-gray-200 rounded p-2">
+                    <div className="text-xs font-medium text-gray-600 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      Estimated APY
                     </div>
-                    <div>
-                      <span className="text-gray-600">Est. Daily Reward:</span>
-                      <div className="font-semibold mt-1 text-primary-100">
-                        {joinPoolData.reward_per_day_delegator?.toFixed(2)} {coin}
-                      </div>
+                    <div className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {joinPoolData.apy?.toFixed(2)}%
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
-            </div>
 
-            {/* Transaction Fee Info */}
-            <div className="bg-blue-50 p-4 rounded-md">
-              <h3 className="font-semibold mb-2 text-blue-800">Transaction Information</h3>
-              <div className="text-sm text-blue-700">
-                <div className="mb-2">
-                  <span className="font-medium">Transaction Fee:</span> Network fee will be deducted from your balance
+              {apyCalculator && stakingAmount > 0 && (
+                <div className="mb-3">
+                  <div className="bg-white border border-gray-200 rounded p-2">
+                    <div className="text-xs font-medium text-gray-600 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      Est. Daily Reward
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {joinPoolData.reward_per_day_delegator?.toFixed(2)} {coin}
+                    </div>
+                  </div>
                 </div>
-                <div className="mb-2">
-                  <span className="font-medium">Delegation Creation:</span> This creates an empty delegation
-                </div>
-              </div>
-            </div>
-
-            {/* Next Steps Info */}
-            <div className="bg-yellow-50 p-4 rounded-md">
-              <h3 className="font-semibold mb-2 text-yellow-800">Next Steps</h3>
-              <div className="text-sm text-yellow-700">
-                <div className="mb-2">
-                  1. After joining, you&apos;ll need to add funds to your delegation to start earning rewards
-                </div>
-                <div className="mb-2">
-                  2. Use the &quot;Add Coins&quot; button to fund your delegation
-                </div>
-                <div>
-                  3. Your delegation will start earning rewards once funded
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative flex flex-row justify-around w-full before:absolute before:w-full before:-top-2 before:border-t-1">
-            <div
-              className={`p-2 rounded text-white flex items-center justify-center gap-2 ${
-                isJoining
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'cursor-pointer'
-              }`}
-              style={!isJoining ? { backgroundColor: 'rgba(17,150,127,1)' } : {}}
-              onClick={isJoining ? undefined : handleConfirmJoin}
-            >
-              {isJoining && (
-                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
               )}
-              {isJoining ? 'Confirming...' : 'Confirm & Join Pool'}
             </div>
-            <div
-              className={`p-2 rounded text-white ${
-                isJoining
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-gray-400 cursor-pointer hover:bg-gray-500'
-              }`}
-              onClick={isJoining ? undefined : () => {
-                setOpenJoinModal(false);
-                setIsJoining(false); // Reset loading state when canceling
-              }}
-            >
-              Cancel
+
+            {/* Transaction Information */}
+            <div className="bg-gray-50 border border-gray-200 rounded p-3 mb-3">
+                                              <h4 className="text-sm font-semibold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Transaction Information
+                </h4>
+              <div className="space-y-2 text-xs text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <div className="flex items-start">
+                  <span className="font-medium mr-2">•</span>
+                  <span><strong>Transaction Fee:</strong> Network fee will be deducted from your balance</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="font-medium mr-2">•</span>
+                  <span><strong>Delegation Creation:</strong> This creates an empty delegation</span>
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* Next Steps */}
+            <div className="bg-gray-50 border border-gray-200 rounded p-3 mb-3">
+                                              <h4 className="text-sm font-semibold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Next Steps
+                </h4>
+              <div className="space-y-1 text-xs text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <div className="flex items-start">
+                  <span className="font-bold mr-2">1.</span>
+                  <span>After joining, add funds to your delegation to start earning rewards</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="font-bold mr-2">2.</span>
+                  <span>Use the &quot;Add TML&quot; button to fund your delegation</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="font-bold mr-2">3.</span>
+                  <span>Your delegation will start earning rewards once funded</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-gray-200">
+              <button
+                disabled={isJoining}
+                className={`flex-1 px-4 py-2 rounded font-semibold text-sm text-white ${
+                  isJoining
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'hover:opacity-90'
+                }`}
+                style={{ 
+                  fontFamily: 'Poppins, sans-serif',
+                  backgroundColor: isJoining ? undefined : 'rgba(17,150,127,1)'
+                }}
+                onClick={isJoining ? undefined : handleConfirmJoin}
+              >
+                {isJoining ? 'Confirming...' : 'Confirm & Join Pool'}
+              </button>
+              
+              <button
+                disabled={isJoining}
+                className={`px-4 py-2 rounded font-semibold text-sm border ${
+                  isJoining
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                }`}
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+                onClick={isJoining ? undefined : () => {
+                  setOpenJoinModal(false);
+                  setIsJoining(false); // Reset loading state when canceling
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </Modal>
       )}
@@ -848,7 +877,7 @@ export function Table() {
           <thead className="bg-white border-b border-gray-200 shadow-sm">
             <tr className="hidden md:table-row">
               {/* Pool Address */}
-              <th className="text-left py-4 px-3 font-medium text-gray-700 w-[22%]">
+              <th className="text-left py-4 px-3 font-bold text-black w-[22%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <div className="flex items-center gap-1">
                   <span>Pool address</span>
                 </div>
@@ -856,11 +885,11 @@ export function Table() {
               
               {/* TML/ML Amount */}
               {apyCalculator && stakingAmount > 0 && (
-                <th className="text-center py-4 px-3 font-medium text-gray-700 w-[10%]">
+                <th className="text-center py-4 px-3 font-bold text-black w-[7%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <div className="flex items-center justify-center gap-1">
                     <span
                       onClick={handleSort("reward_per_day_delegator", "asc")}
-                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      className="cursor-pointer text-xs text-black hover:text-gray-700"
                       data-tooltip-id="tooltip"
                       data-tooltip-content="Sort ascending"
                     >
@@ -868,7 +897,7 @@ export function Table() {
                     </span>
                     <span
                       onClick={handleSort("reward_per_day_delegator", "desc")}
-                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      className="cursor-pointer text-xs text-black hover:text-gray-700"
                       data-tooltip-id="tooltip"
                       data-tooltip-content="Sort descending"
                     >
@@ -881,11 +910,11 @@ export function Table() {
               
               {/* APY */}
               {apyCalculator && stakingAmount > 0 && (
-                <th className="text-center py-4 px-3 font-medium text-gray-700 w-[10%]">
+                <th className="text-center py-4 px-3 font-bold text-black w-[7%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <div className="flex items-center justify-center gap-1">
                     <span
                       onClick={handleSort("apy", "asc")}
-                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      className="cursor-pointer text-xs text-black hover:text-gray-700"
                       data-tooltip-id="tooltip"
                       data-tooltip-content="Sort ascending"
                     >
@@ -893,7 +922,7 @@ export function Table() {
                     </span>
                     <span
                       onClick={handleSort("apy", "desc")}
-                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      className="cursor-pointer text-xs text-black hover:text-gray-700"
                       data-tooltip-id="tooltip"
                       data-tooltip-content="Sort descending"
                     >
@@ -905,11 +934,11 @@ export function Table() {
               )}
 
               {/* Time */}
-              <th className="text-center py-4 px-3 font-medium text-gray-700 w-[9%]">
+              <th className="text-center py-4 px-3 font-bold text-black w-[8%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <div className="flex items-center justify-center gap-1">
                   <span
                     onClick={handleSort("hours_for_block", "asc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort ascending"
                   >
@@ -917,7 +946,7 @@ export function Table() {
                   </span>
                   <span
                     onClick={handleSort("hours_for_block", "desc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort descending"
                   >
@@ -933,11 +962,11 @@ export function Table() {
               </th>
 
               {/* Cost per Block */}
-              <th className="text-center py-4 px-3 font-medium text-gray-700 w-[9%]">
+              <th className="text-center py-4 px-3 font-bold text-black w-[8%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <div className="flex items-center justify-center gap-1">
                   <span
                     onClick={handleSort("cost_per_block", "asc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort ascending"
                   >
@@ -945,7 +974,7 @@ export function Table() {
                   </span>
                   <span
                     onClick={handleSort("cost_per_block", "desc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort descending"
                   >
@@ -961,11 +990,11 @@ export function Table() {
               </th>
 
               {/* Commission */}
-              <th className="text-center py-4 px-3 font-medium text-gray-700 w-[10%]">
+              <th className="text-center py-4 px-3 font-bold text-black w-[7%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <div className="flex items-center justify-center gap-1">
                   <span
                     onClick={handleSort("margin_ratio", "asc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort ascending"
                   >
@@ -973,7 +1002,7 @@ export function Table() {
                   </span>
                   <span
                     onClick={handleSort("margin_ratio", "desc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort descending"
                   >
@@ -989,11 +1018,11 @@ export function Table() {
               </th>
 
               {/* Saturation Indicator */}
-              <th className={`text-center py-4 px-3 font-medium text-gray-700 ${detected ? 'w-[9%]' : 'w-[11%]'}`}>
+              <th className={`text-center py-4 px-3 font-bold text-black w-[11%] text-[14px]`} style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <div className="flex items-center justify-center gap-1">
                   <span
                     onClick={handleSort("balance", "asc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort by saturation ascending"
                   >
@@ -1001,7 +1030,7 @@ export function Table() {
                   </span>
                   <span
                     onClick={handleSort("balance", "desc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort by saturation descending"
                   >
@@ -1011,11 +1040,11 @@ export function Table() {
               </th>
 
               {/* Total Balance */}
-              <th className="text-center py-4 px-3 font-medium text-gray-700 w-[15%]">
+              <th className="text-center py-4 px-3 font-bold text-black w-[15%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <div className="flex items-center justify-center gap-1">
                   <span
                     onClick={handleSort("balance", "asc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort ascending"
                   >
@@ -1023,7 +1052,7 @@ export function Table() {
                   </span>
                   <span
                     onClick={handleSort("balance", "desc")}
-                    className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                    className="cursor-pointer text-xs text-black hover:text-gray-700"
                     data-tooltip-id="tooltip"
                     data-tooltip-content="Sort descending"
                   >
@@ -1035,18 +1064,18 @@ export function Table() {
 
               {/* Stake - for non-connected wallets */}
               {!detected && (
-                <th className="text-center py-4 px-3 font-medium text-gray-700 w-[10%]">
+                <th className="text-center py-4 px-3 font-bold text-black w-[10%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   Stake
                 </th>
               )}
 
               {/* Your Stake */}
               {detected && (
-                <th className="text-center py-4 px-3 font-medium text-gray-700 w-[10%]">
+                <th className="text-center py-4 px-3 font-bold text-black w-[10%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <div className="flex items-center justify-center gap-1">
                     <span
                       onClick={handleSort("delegation_balance", "asc")}
-                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      className="cursor-pointer text-xs text-black hover:text-gray-700"
                       data-tooltip-id="tooltip"
                       data-tooltip-content="Sort ascending"
                     >
@@ -1054,7 +1083,7 @@ export function Table() {
                     </span>
                     <span
                       onClick={handleSort("delegation_balance", "desc")}
-                      className="cursor-pointer text-xs opacity-60 hover:opacity-100"
+                      className="cursor-pointer text-xs text-black hover:text-gray-700"
                       data-tooltip-id="tooltip"
                       data-tooltip-content="Sort descending"
                     >
@@ -1067,7 +1096,7 @@ export function Table() {
 
               {/* Actions */}
               {detected && (
-                <th className="text-center py-4 px-3 font-medium text-gray-700 w-[7%]">
+                <th className="text-center py-4 px-3 font-bold text-black w-[7%] text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   Actions
                 </th>
               )}
@@ -1100,7 +1129,8 @@ export function Table() {
                         <div className="flex items-center gap-2">
                           <Link 
                             href={"/pool/" + value.pool_id}
-                            className="font-mono text-primary-100 group-hover:text-primary-110 group-hover:font-bold text-sm md:text-base transition-all duration-200"
+                            className="text-black group-hover:font-bold text-[14px] transition-all duration-200"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
                           >
                             <span className="hidden md:inline">
                               {value.pool_id.slice(0, 10)}...{value.pool_id.slice(-10)}
@@ -1110,7 +1140,7 @@ export function Table() {
                             </span>
                           </Link>
                           <span
-                            className="cursor-pointer opacity-60 hover:opacity-100"
+                            className="cursor-pointer text-black hover:text-gray-700"
                             data-tooltip-id="tooltip"
                             data-tooltip-content={copy[value.pool_id] ? "Copied" : "Click to copy pool address"}
                             onClick={handleCopy(value.pool_id)}
@@ -1123,11 +1153,12 @@ export function Table() {
 
                     {/* TML/ML Amount */}
                     {apyCalculator && stakingAmount > 0 && (
-                      <td className="py-4 px-3 text-center md:w-[10%] align-middle">
+                      <td className="py-4 px-3 text-center md:w-[7%] align-middle">
                         <div className="flex flex-col md:block">
                           <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Daily Reward</div>
                           <div 
-                            className="font-mono"
+                            className="text-black text-[14px]"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
                             data-tooltip-id="tooltip-multiline"
                             data-tooltip-content={`${`Total ${coin} for the pool: ${reward_per_day_pool.toFixed(0)} ${coin}/day`}\n${`Your part in the pool: ${part_label}%`}\n${`You get ${reward_per_day_delegator.toFixed(2)} ${coin}/day.`}`}
                           >
@@ -1139,11 +1170,12 @@ export function Table() {
 
                     {/* APY */}
                     {apyCalculator && stakingAmount > 0 && (
-                      <td className="py-4 px-3 text-center md:w-[10%] align-middle">
+                      <td className="py-4 px-3 text-center md:w-[7%] align-middle">
                         <div className="flex flex-col md:block">
                           <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">APY</div>
                           <div 
-                            className="font-bold text-black"
+                            className="text-black text-[14px]"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
                             data-tooltip-id="tooltip"
                             data-tooltip-content={`Your estimated APY for this pool by delegating ${stakingAmount} ${coin}`}
                           >
@@ -1154,11 +1186,12 @@ export function Table() {
                     )}
 
                     {/* Time */}
-                    <td className="py-4 px-3 text-center md:w-[9%] align-middle">
+                    <td className="py-4 px-3 text-center md:w-[8%] align-middle">
                       <div className="flex flex-col md:block">
                         <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Block Time</div>
                         <div 
-                          className="font-mono text-sm"
+                          className="text-black text-[14px]"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
                           data-tooltip-id="tooltip"
                           data-tooltip-content={`On average, it takes ${forPopup(hoursToTimeFormatWithMinutes(hours_for_block))} to find 1 block`}
                         >
@@ -1168,11 +1201,12 @@ export function Table() {
                     </td>
 
                     {/* Cost per Block */}
-                    <td className="py-4 px-3 text-center md:w-[9%] align-middle">
+                    <td className="py-4 px-3 text-center md:w-[8%] align-middle">
                       <div className="flex flex-col md:block">
                         <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Cost per Block</div>
                         <div 
-                          className="font-mono text-sm"
+                          className="text-black text-[14px]"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
                           data-tooltip-id="tooltip"
                           data-tooltip-content={`Pool takes ${value?.cost_per_block} ${coin} of the reward before splitting`}
                         >
@@ -1182,11 +1216,12 @@ export function Table() {
                     </td>
 
                     {/* Commission */}
-                    <td className="py-4 px-3 text-center md:w-[10%] align-middle">
+                    <td className="py-4 px-3 text-center md:w-[7%] align-middle">
                       <div className="flex flex-col md:block">
                         <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Commission</div>
                         <div 
-                          className="font-mono"
+                          className="text-black text-[14px]"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
                           data-tooltip-id="tooltip"
                           data-tooltip-content={`${((1 - value.margin_ratio) * 100).toFixed(1)}% of the reward after fixed pool cost per block goes to the delegators`}
                         >
@@ -1196,7 +1231,7 @@ export function Table() {
                     </td>
 
                     {/* Saturation Indicator */}
-                    <td className={`py-4 px-3 text-center align-middle ${detected ? 'md:w-[9%]' : 'md:w-[11%]'}`}>
+                    <td className={`py-4 px-3 text-center align-middle md:w-[11%]`}>
                       <div className="flex flex-col justify-center">
                         <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-2">Saturation</div>
                         
@@ -1244,7 +1279,8 @@ export function Table() {
                         {/* Balance Amount */}
                         <div className="flex items-center justify-center gap-1">
                           <span 
-                            className="font-mono text-sm"
+                            className="text-black text-[14px]"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
                             data-tooltip-id="tooltip"
                             data-tooltip-content="Total balance of the pool consists of the pool pledge and the delegations"
                           >
@@ -1270,7 +1306,7 @@ export function Table() {
                             disabled
                             data-tooltip-id="tooltip"
                             data-tooltip-content="Connect your wallet to stake in this pool"
-                            className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md text-sm font-medium cursor-not-allowed w-full min-w-[70px] max-w-[90px] whitespace-nowrap"
+                            className="bg-[#94A4A1] text-white px-3 py-1.5 rounded-md text-sm font-medium cursor-not-allowed w-full min-w-[70px] max-w-[90px] whitespace-nowrap"
                           >
                             Stake
                           </button>
@@ -1285,15 +1321,15 @@ export function Table() {
                           <div className="md:hidden text-xs font-medium text-gray-500 uppercase mb-1">Your Stake</div>
                           {value?.delegation_balance > 0 ? (
                             <div>
-                              <div className="font-bold text-primary-100 font-mono">
-                                {formatML(value.delegation_balance)} {coin}
+                              <div className="text-black text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                {formatML(value.delegation_balance, 3)} {coin}
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                                 {value.delegation_count} delegation{value.delegation_count > 1 ? 's' : ''}
                               </div>
                             </div>
                           ) : (
-                            <div className="text-gray-400">-</div>
+                            <div className="text-black text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>-</div>
                           )}
                         </div>
                       </td>
@@ -1305,23 +1341,34 @@ export function Table() {
                         <div className="flex flex-col gap-2 justify-center items-center">
                           <div className="md:hidden text-xs font-medium text-gray-500 uppercase">Actions</div>
                           
-                          <button
-                            data-tooltip-id="tooltip"
-                            data-tooltip-content={value?.delegation_exists ? "Add funds to existing delegation" : "Create new delegation in this pool"}
-                            className="bg-primary-100 hover:bg-primary-110 px-3 py-1.5 text-white rounded-md text-sm font-medium transition-colors w-full min-w-[90px] max-w-[110px] whitespace-nowrap"
-                            onClick={() => handleStackPool(value.balance, value.pool_id, value?.delegation_exists, value)}
-                          >
-                            {value?.delegation_exists ? 'Add Coins' : 'Join'}
-                          </button>
+                          {value?.delegation_exists ? (
+                            <button
+                              data-tooltip-id="tooltip"
+                              data-tooltip-content="Add TML to existing delegation"
+                              className="bg-[rgba(17,150,127,1)] hover:bg-primary-110 px-3 py-1.5 text-white rounded-md text-sm font-medium transition-colors w-full min-w-[90px] max-w-[110px] whitespace-nowrap"
+                              onClick={() => handleStackPool(value.balance, value.pool_id, value?.delegation_exists, value)}
+                            >
+                              Add TML
+                            </button>
+                          ) : (
+                            <button
+                              data-tooltip-id="tooltip"
+                              data-tooltip-content="Create new delegation in this pool"
+                              className="bg-primary-100 hover:bg-primary-110 px-3 py-1.5 text-white rounded-md text-sm font-medium transition-colors w-full min-w-[90px] max-w-[110px] whitespace-nowrap"
+                              onClick={() => handleStackPool(value.balance, value.pool_id, value?.delegation_exists, value)}
+                            >
+                              Join
+                            </button>
+                          )}
                           
                           {value?.delegation_balance > 0 && (
                             <button
                               data-tooltip-id="tooltip"
-                              data-tooltip-content="Withdraw from this pool"
+                              data-tooltip-content="Unstake from this pool"
                               className="bg-red-500 hover:bg-red-600 px-3 py-1.5 text-white rounded-md text-sm font-medium transition-colors w-full min-w-[90px] max-w-[110px] whitespace-nowrap"
                               onClick={() => handleWithdrawPool(value.pool_id, value.delegation_balance)}
                             >
-                              Withdraw
+                              Unstake
                             </button>
                           )}
                         </div>
@@ -1381,10 +1428,10 @@ export function Table() {
 
 function forTable({ d, h, m }: { d: number; h: number; m: number }) {
   if (d > 100) {
-    return <div className="w-[60px] text-center">-</div>;
+    return <div className="w-[60px] text-center text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>-</div>;
   }
   return (
-    <div className="flex gap-1 justify-center items-center text-xs">
+    <div className="flex gap-1 justify-center items-center text-[14px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {d > 0 && <span>{d}d</span>}
       {h > 0 && <span>{h}h</span>}
       {m > 0 && <span>{m}m</span>}
