@@ -16,6 +16,7 @@ const mainnetColors = {
     black: "rgba(12, 39, 34, 1)",
     gray40: "rgba(148, 164, 161, 1)",
   },
+  mint: "#37DB8C",
   background: "rgba(241, 243, 243, 1)",
 };
 
@@ -34,6 +35,7 @@ const testnetColors = {
     black: "rgba(12, 39, 34, 1)",
     gray40: "rgba(148, 164, 161, 1)",
   },
+  mint: "#37DB8C",
   background: "rgba(241, 243, 243, 1)",
 };
 
