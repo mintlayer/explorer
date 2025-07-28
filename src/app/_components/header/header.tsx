@@ -62,7 +62,7 @@ const mappedMenuLinks = MENU_LINKS.map((link, i) => {
       <Link className="group/link relative hover:text-base-dark" href={link.href} target={link.target}>
         {link.label}
         <span
-          className="h-0 w-0 bg-transparent absolute -bottom-1 left-0 transform skew-x-[-60deg] group-hover/link:w-0 transition-all ease-in-out duration-300"
+          className="h-[2px] w-0 bg-[#11967f] absolute -bottom-1 left-0 transform skew-x-[-60deg] group-hover/link:w-[65%] transition-all ease-in-out duration-300"
           aria-hidden="true"
         ></span>
       </Link>
@@ -131,8 +131,8 @@ export const Header = () => {
           </Link>
 
           <div className="order-2 md:order-3 md:-mr-5 group/dropdown">
-            <div className="text-black font-bold relative text-[16px] h-[35px] flex items-center last:mr-0" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              <div className="relative pr-2 pt-1 pb-1 pl-4 border-0 cursor-pointer">
+            <div className="text-base-gray font-bold relative text-[14px] h-[35px] flex items-center last:mr-0">
+              <div className="relative pr-2 pt-1 pb-1 pl-4 border-solid border-1 border-base-gray cursor-pointer">
                 <div className="flex items-center">
                   {displayName} <Image className="ml-2" src={expand_more} alt={""} />
                 </div>
@@ -149,7 +149,7 @@ export const Header = () => {
                         <Link className="group/link relative hover:text-base-dark" href={net.href} target={net.target}>
                           {net.label}
                           <span
-                            className={`h-0 w-0 bg-transparent absolute -bottom-1 left-0 transform skew-x-[-60deg] group-hover/link:w-0 transition-all ease-in-out duration-300`}
+                            className={`h-[2px] w-0 ${net.accent?'bg-[#a383ff]':'bg-[#11967f]'} absolute -bottom-1 left-0 transform skew-x-[-60deg] group-hover/link:w-[65%] transition-all ease-in-out duration-300`}
                             aria-hidden="true"
                           ></span>
                         </Link>
