@@ -36,7 +36,7 @@ export async function GET(request: Request, { params }: { params: { transaction:
 
   const data = await getTransaction(NODE_API_URL);
 
-  if (data.source && data.source === 'mempool') {
+  if (data.confirmations === 0) {
     // get block height
     const chain_tip = await fetch(NODE_API_URL + "/chain/tip", {
       headers: {
@@ -46,17 +46,44 @@ export async function GET(request: Request, { params }: { params: { transaction:
     const chain_tip_data = await chain_tip.json();
     const { block_height } = chain_tip_data;
 
+    // fill utxo with data. There is an issue, utxo is not known but we have source_id and index, need to fetch that and augment to input.utxo
+
+    const inputs = data.inputs.map(async ({ input }: any) => {
+      if(input.input_type !== 'UTXO'){
+        return {
+          input,
+          utxo: null,
+        };
+      }
+      const res = await fetch(NODE_API_URL + "/transaction/" + input.source_id, {
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const tx = await res.json();
+
+      return {
+        input,
+        utxo: tx.outputs[input.index],
+      };
+    });
+
+    const inputs_data = await Promise.all(inputs);
+    data.inputs = inputs_data;
+
+
     return NextResponse.json({
       ...data,
-      id: data.tx_id,
-      hash: data.tx_id,
+      id: data.id,
+      hash: data.id,
       confirmations: 0,
       used_tokens: [],
-      inputs: data.metadata && data.metadata.inputs ? data.metadata.inputs : [],
-      outputs: data.metadata && data.metadata.outputs ? data.metadata.outputs : [],
+      inputs: data.inputs || [],
+      outputs: data.outputs || [],
       block_height: parseInt(block_height) + 1,
       version_byte: 1,
-      fee: data.transaction.length / 2 / 1000, // half of hex length in kb
+      fee: data.fee.decimal, // half of hex length in kb
       amount: 0,
     }, { status: 200 });
   }
