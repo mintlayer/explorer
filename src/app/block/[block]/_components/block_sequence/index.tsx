@@ -106,17 +106,19 @@ export const BlockSequence = ({ current, last }: { last: number; current: number
   const sequence = generateSequence(last, current, blocksCount);
 
   return (
-    <div className={`relative my-5`}>
-      <div className="flex justify-between items-center my-4 mx-5">
-        <div>{current - 1} previous</div>
-        <div>{last - current} subsequent</div>
-      </div>
+    <div className="w-full h-40 -mt-10 mb-10">
+      <div className={`my-5 absolute left-0 right-0`}>
+        <div className="flex justify-between items-center my-4 mx-5">
+          <div>{current - 1} previous</div>
+          <div>{last - current} subsequent</div>
+        </div>
 
-      {sequence.length > 0 && <div className="absolute left-0 bottom-[36px] md:bottom-9 h-[1px] bg-base-gray w-full" aria-hidden></div>}
-      <div className="relative px-5 py-3 flex flex-row items-end justify-between gap-4 overflow-hidden">
-        {sequence.map((item) => (
-          <Block key={"block" + item.number} {...item} />
-        ))}
+        {sequence.length > 0 && <div className="absolute left-0 bottom-[36px] md:bottom-9 h-[1px] bg-base-gray w-full" aria-hidden></div>}
+        <div className="relative px-5 py-3 flex flex-row items-end justify-between gap-4 overflow-hidden">
+          {sequence.map((item) => (
+            <Block key={"block" + item.number} {...item} />
+          ))}
+        </div>
       </div>
     </div>
   );
