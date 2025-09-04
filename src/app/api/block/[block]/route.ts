@@ -6,6 +6,37 @@ const NODE_SIDE_API_URL = getUrlSide();
 
 export const dynamic = "force-dynamic";
 
+async function getBlocksRecursive(block_id: string, limit: number, apiUrl: string): Promise<any[]> {
+  let blocks = [];
+  if (limit > 0 && block_id) {
+    try {
+      const block_response = await fetch(apiUrl + "/block/" + block_id, {
+        cache: "force-cache", // block content is not changing
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await block_response.json();
+
+      if (!data.error) {
+        blocks.push(data);
+        blocks = blocks.concat(await getBlocksRecursive(data.header.previous_block_id, limit - 1, apiUrl));
+      }
+    } catch (error) {
+      console.error("Error fetching block for median time:", error);
+    }
+  }
+  return blocks;
+}
+
+function calculateMedianTimePast(timestamps: number[]): number {
+  if (timestamps.length === 0) return 0;
+  const sorted = [...timestamps].sort((a, b) => a - b);
+  const medianIndex = Math.floor(sorted.length / 2);
+  return sorted[medianIndex];
+}
+
 type AddressResponse = {
   hash?: string;
   block?: string;
@@ -16,6 +47,8 @@ type AddressResponse = {
   timestamp?: number;
   info?: {
     merkle_root?: string;
+    target_difficulty?: number;
+    median_time?: number;
   };
   pool?: string;
   summary?: {
@@ -143,6 +176,23 @@ export async function GET(request: Request, { params }: { params: { block: strin
   response.timestamp = data.header.timestamp.timestamp;
   response.pool = data.body.reward[0].pool_id;
   response.info.merkle_root = data?.header?.merkle_root;
+  response.info.target_difficulty = parseInt(data?.header?.consensus_data.target, 16) / (Math.pow(2, 256) - 1);
+
+  try {
+    const blocks = await getBlocksRecursive(data.header.previous_block_id, 10, NODE_API_URL);
+    const timestamps = [data.header.timestamp.timestamp, ...blocks.map(block => block.header.timestamp.timestamp)]
+      .filter(timestamp => timestamp && typeof timestamp === 'number');
+
+    if (timestamps.length > 0) {
+      response.info.median_time = calculateMedianTimePast(timestamps);
+    } else {
+      response.info.median_time = data.header.timestamp.timestamp; // fallback to current block timestamp
+    }
+  } catch (error) {
+    console.error("Error calculating median time:", error);
+    response.info.median_time = data.header.timestamp.timestamp; // fallback to current block timestamp
+  }
+
   response.summary = {
     total_inputs,
     total_outputs,

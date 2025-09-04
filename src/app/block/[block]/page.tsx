@@ -183,7 +183,7 @@ export default async function Block({
           <BlockDetails
             data={[
               { title: "Size", value: "-", icon: icon_info },
-              { title: "Difficulty", value: "-", icon: icon_info },
+              { title: "Difficulty", value: data.info.target_difficulty, icon: icon_info },
               {
                 title: "Merkle root",
                 value: data?.info?.merkle_root,
@@ -191,7 +191,7 @@ export default async function Block({
               },
               { title: "Version", value: "-", icon: icon_info },
               { title: "Bits", value: "-", icon: icon_info },
-              { title: "Median time", value: "-", icon: icon_info },
+              { title: "Median time", value: data?.info?.median_time ? formatDate(data.info.median_time) : "-", icon: icon_info },
             ]}
           />
         </div>
