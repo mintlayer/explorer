@@ -610,10 +610,10 @@ export function Table() {
               <h3 className="font-semibold mb-2 text-yellow-800">Next Steps</h3>
               <div className="text-sm text-yellow-700">
                 <div className="mb-2">
-                  1. After joining, you'll need to add funds to your delegation to start earning rewards
+                  1. After joining, you will need to add funds to your delegation to start earning rewards
                 </div>
                 <div className="mb-2">
-                  2. Use the "Add Coins" button to fund your delegation
+                  2. Use the [Add Coins] button to fund your delegation
                 </div>
                 <div>
                   3. Your delegation will start earning rewards once funded
