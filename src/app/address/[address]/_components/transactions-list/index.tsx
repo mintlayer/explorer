@@ -48,7 +48,7 @@ export function TransactionsList({ transactions }: any) {
     return {
       tx_hash: item.hash,
       block: item.block_height,
-      amount: item.amount,
+      amount: item.amount || 0,
       fee: item.fee,
       input_output: (
         <div className="flex flex-row whitespace-nowrap gap-1">

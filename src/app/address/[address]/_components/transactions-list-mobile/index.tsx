@@ -6,7 +6,7 @@ import { Transaction } from "@/app/(homepage)/_components/transaction";
 const convertToTransactionsArray = (data: any[]) => {
   const newArray = data.map((el) => {
     return {
-      amount: el.amount.toFixed(2).toString(),
+      amount: el?.amount,
       block: el.block_height,
       fee: el.fee,
       input: el.inputs.length,
