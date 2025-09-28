@@ -33,6 +33,13 @@ const NETS: MenuLink[] = [
     accent: "#a383ff",
   },
 ];
+const TOOLS_LINKS: MenuLink[] = [
+  {
+    label: "TX Hex Decoder",
+    href: "/decode",
+  },
+];
+
 const MENU_LINKS: MenuLink[] = [
   {
     label: "Website",
@@ -55,6 +62,20 @@ const MENU_LINKS: MenuLink[] = [
     target: "_blank",
   },
 ];
+
+const mappedToolsLinks = TOOLS_LINKS.map((link, i) => {
+  return (
+    <li key={i} className="mb-3 whitespace-nowrap">
+      <Link className="group/link relative hover:text-base-dark" href={link.href} target={link.target}>
+        {link.label}
+        <span
+          className="h-[2px] w-0 bg-[#11967f] absolute -bottom-1 left-0 transform skew-x-[-60deg] group-hover/link:w-[65%] transition-all ease-in-out duration-300"
+          aria-hidden="true"
+        ></span>
+      </Link>
+    </li>
+  );
+});
 
 const mappedMenuLinks = MENU_LINKS.map((link, i) => {
   return (
@@ -130,7 +151,7 @@ export const Header = () => {
             <span className="ml-1 mt-1 hidden md:block uppercase text-base-dark text-xs tracking-widest"> - explorer</span>
           </Link>
 
-          <div className="order-2 md:order-3 md:-mr-5 group/dropdown">
+          <div className="order-3 md:order-4 md:-mr-5 group/dropdown">
             <div className="text-base-gray font-bold relative text-[14px] h-[35px] flex items-center last:mr-0">
               <div className="relative pr-2 pt-1 pb-1 pl-4 border-solid border-1 border-base-gray cursor-pointer">
                 <div className="flex items-center">
@@ -163,6 +184,23 @@ export const Header = () => {
           </div>
 
           <div className="order-2 md:order-3 group/dropdown">
+            <div className="text-base-gray font-bold relative text-[14px] h-[35px] flex items-center last:mr-0">
+              <Link className="hidden md:inline" href={""}>
+                Tools
+              </Link>
+
+              <div
+                className="hidden md:block absolute top-0 right-0 bg-white mt-12 px-6 pt-4 pb-2 shadow-md invisible z-100 text-base font-medium opacity-0 transition-all ease-in-out duration-100
+                  delay-100 translate-y-[-5px] w-[190px] group-hover/dropdown:visible group-hover/dropdown:opacity-100 group-hover/dropdown:transition-none group-hover/dropdown:delay-0
+                  group-hover/dropdown:translate-x-0 group-hover/dropdown:translate-y-0"
+              >
+                <ul>{mappedToolsLinks}</ul>
+              </div>
+              <div className="absolute top-0 right-0 bg-transparent w-[150px] h-[50px]" aria-hidden="true"></div>
+            </div>
+          </div>
+
+          <div className="order-3 md:order-4 group/dropdown">
             <div className="text-base-gray font-bold relative text-[14px] h-[35px] flex items-center last:mr-0">
               <Link className="hidden md:inline" href={""}>
                 Learn

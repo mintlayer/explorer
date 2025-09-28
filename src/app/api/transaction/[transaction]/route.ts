@@ -21,6 +21,46 @@ type TransactionResponse = {
   used_tokens?: string[];
 };
 
+/**
+ * Augment outputs with spent status by checking each output's spent status
+ */
+async function augmentOutputsWithSpentStatus(transactionId: string, outputs: any[]): Promise<any[]> {
+  const augmentedOutputs = await Promise.all(outputs.map(async (output: any, index: number) => {
+    try {
+      // Fetch spent status for this output
+      const res = await fetch(`${NODE_API_URL}/transaction/${transactionId}/output/${index}`, {
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        console.warn(`Failed to fetch spent status for ${transactionId}/output/${index}`);
+        return {
+          ...output,
+          spent: null // Unknown spent status
+        };
+      }
+
+      const spentData = await res.json();
+
+      return {
+        ...output,
+        spent: spentData.spent || false
+      };
+    } catch (error) {
+      console.warn(`Error fetching spent status for ${transactionId}/output/${index}:`, error);
+      return {
+        ...output,
+        spent: null // Unknown spent status on error
+      };
+    }
+  }));
+
+  return augmentedOutputs;
+}
+
 export async function GET(request: Request, { params }: { params: { transaction: string } }) {
   const getTransaction = async (apiUrl: string) => {
     const res = await fetch(apiUrl + "/transaction/" + params.transaction, {
@@ -72,6 +112,8 @@ export async function GET(request: Request, { params }: { params: { transaction:
     const inputs_data = await Promise.all(inputs);
     data.inputs = inputs_data;
 
+    // Augment outputs with spent status
+    const augmentedOutputs = await augmentOutputsWithSpentStatus(params.transaction, data.outputs || []);
 
     return NextResponse.json({
       ...data,
@@ -80,7 +122,7 @@ export async function GET(request: Request, { params }: { params: { transaction:
       confirmations: 0,
       used_tokens: [],
       inputs: data.inputs || [],
-      outputs: data.outputs || [],
+      outputs: augmentedOutputs,
       block_height: parseInt(block_height) + 1,
       version_byte: 1,
       fee: data.fee.decimal, // half of hex length in kb
@@ -137,12 +179,15 @@ export async function GET(request: Request, { params }: { params: { transaction:
 
   const block = await data_block.json();
 
+  // Augment outputs with spent status
+  const augmentedOutputs = await augmentOutputsWithSpentStatus(params.transaction, data.outputs || []);
+
   response.confirmations = data.confirmations;
   response.fee = data.fee.decimal;
   response.timestamp = data.timestamp;
   response.hash = params.transaction;
   response.inputs = data.inputs;
-  response.outputs = data.outputs;
+  response.outputs = augmentedOutputs;
   response.amount = Number(amount);
   response.version_byte = data.version_byte;
   response.block_height = block.height;
