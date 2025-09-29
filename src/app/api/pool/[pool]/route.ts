@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getUrl, getUrlSide, isMainNetwork } from "@/utils/network";
-import { effective_pool_balance, Network } from "@/utils/mintlayer-crypto/pkg";
+import {
+  effective_pool_balance,
+  Network,
+  Amount,
+} from "@/utils/mintlayer-crypto/pkg";
 
 const NODE_API_URL = getUrl();
 const NODE_SIDE_API_URL = getUrlSide();
@@ -51,7 +55,8 @@ export async function GET(request: Request, { params }: { params: { pool: string
 
   // @ts-ignore
   response.pool_balance = (pool_balance / 1e11).toString();
-  response.effective_pool_balance = effective_pool_balance(network, data.staker_balance.atoms, pool_balance);
+  // @ts-ignore
+  response.effective_pool_balance = (effective_pool_balance(network, Amount.from_atoms(data.staker_balance.atoms), Amount.from_atoms(pool_balance)).atoms() / 1e11).toString();
   response.cost_per_block = data.cost_per_block.decimal;
   response.margin_ratio_per_thousand = data.margin_ratio_per_thousand.replace("%", "") * 10;
   response.margin_ratio = (data.margin_ratio_per_thousand.replace("%", "") * 10) / 1000;

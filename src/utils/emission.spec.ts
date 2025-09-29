@@ -40,6 +40,7 @@ describe("get_total_subsidy", () => {
     expect(get_total_subsidy(10)).toEqual(2020);
     expect(get_total_subsidy(262800)).toEqual(53085600); // 202 * 262800
     expect(get_total_subsidy(262801)).toEqual(53085751); // 202 * 262800 + 151
+    expect(get_total_subsidy(436826)).toEqual(79363526); // 202 * 262800 + 151 * 174065
     expect(get_total_subsidy(525600)).toEqual(92768400); // 202 * 262800 + 151 * 262800
     expect(get_total_subsidy(525601)).toEqual(92768513); // 202 * 262800 + 151 * 262800 + 113
     expect(get_total_subsidy(788400)).toEqual(122464800); // 202 * 262800 + 151 * 262800 + 113 * 262800
