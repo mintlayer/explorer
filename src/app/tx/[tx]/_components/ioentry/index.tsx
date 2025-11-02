@@ -8,7 +8,31 @@ import Link from "next/link";
 import { getCoin } from "@/utils/network";
 import { formatML } from "@/utils/numbers";
 
-export const IOEntry = ({ data, expand, type, metadata }: any) => {
+const getTooltipContent = (item: string) => {
+  if( item === 'utxo' ) {
+    return "Unspent transaction output that has been spent in this transaction";
+  }
+
+  if( item === 'input' ) {
+    return "Input of the transaction";
+  }
+
+  if( item === 'destination' ) {
+    return "Address that receives the output";
+  }
+
+  if( item === 'type' ) {
+    return "Type of the output";
+  }
+
+  if( item === 'spent' ) {
+    return "Flag indicating if the output has been spent";
+  }
+
+  return item;
+};
+
+export const IOEntry = ({ data, expand, type, metadata, index, highlight }: any) => {
   let amount;
   let label = "";
   let link = "/";
@@ -101,9 +125,10 @@ export const IOEntry = ({ data, expand, type, metadata }: any) => {
 
   return (
     <div className="mb-6">
-      <div className={`flex items-center justify-between px-4 py-4 h-full transition-all duration-300 ${expand ? "bg-primary-100" : "bg-white"}`}>
+      <div className={`flex items-center justify-between px-4 py-4 h-full transition-all duration-300 ${highlight ? "border-l-4 border-primary-100 bg-amber-50" : ""} ${expand ? "bg-primary-100" : "bg-white"}`}>
         <div className={`flex items-center gap-1 font-medium ${expand ? "text-white" : "text-primary-110"}`}>
-          <Image className={`${expand && "grayscale brightness-[1000%]"}`} src={icon_hash} alt={""} />
+          {/*<Image className={`${expand && "grayscale brightness-[1000%]"}`} src={icon_hash} alt={""} />*/}
+          <span data-tooltip-id="tooltip" data-tooltip-content={`Tx ${type} index`} className={`mr-1 text-primary-110 opacity-50 font-mono text-xs ${expand ? "text-white" : "text-primary-110"}`}>#{index}</span>
           {link ? <Link href={link}>{head.short_label}</Link> : <>{head.short_label}</>}
           <Copy imageStyle={`${expand && "grayscale brightness-[1000%]"}`} text={head.label} />
         </div>
@@ -119,7 +144,7 @@ export const IOEntry = ({ data, expand, type, metadata }: any) => {
             return (
               <div key={index} className={type === "input" ? "grid grid-cols-2 gap-4 mb-4" : "grid grid-cols-4 gap-4 mb-4"}>
                 <div className="col-span-1 flex text-base-black font-medium text-[12px] items-start">
-                  <Image className="mr-2" src={icon_info} alt={""} />
+                  <Image className="mr-2" src={icon_info} alt={""} data-tooltip-id="tooltip" data-tooltip-content={getTooltipContent(item.toLowerCase())} />
                   {item.toLowerCase()}
                 </div>
                 <div className={"word-wrap-break-word col-span-3 text-base-gray text-[12px] overflow-scroll"}>
