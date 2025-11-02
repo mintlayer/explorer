@@ -66,6 +66,9 @@ const getQueryType = (query: string) => {
   if (query.match(token_matcher)) {
     types.push("token");
   }
+  if (query.match(token_name_matcher)) {
+    types.push("token_ticker");
+  }
   return types;
 };
 
@@ -95,6 +98,9 @@ const getQuerySkeleletonData = (query: string) => {
   }
   if (type === "token") {
     data.push({ icon: "hash", value: shortenString(query) });
+  }
+  if (type === "token_ticker") {
+    data.push({ icon: "hash", value: query });
   }
   return data;
 };
@@ -258,6 +264,10 @@ export const Search = () => {
 
 function ResultItem({ result, query, onClick, skeleton }: any) {
   const handleOnClick = () => {
+    if(result.link){
+      window.location.href = result.link;
+      return;
+    }
     onClick(result.type, query);
   };
 

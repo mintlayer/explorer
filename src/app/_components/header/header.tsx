@@ -185,6 +185,14 @@ export const Header = () => {
 
           <div className="order-2 md:order-3 group/dropdown">
             <div className="text-base-gray font-bold relative text-[14px] h-[35px] flex items-center last:mr-0">
+              <Link className="hidden md:inline" href={"/tokens"}>
+                Tokens
+              </Link>
+            </div>
+          </div>
+
+          <div className="order-2 md:order-3 group/dropdown">
+            <div className="text-base-gray font-bold relative text-[14px] h-[35px] flex items-center last:mr-0">
               <Link className="hidden md:inline" href={""}>
                 Tools
               </Link>
@@ -196,7 +204,6 @@ export const Header = () => {
               >
                 <ul>{mappedToolsLinks}</ul>
               </div>
-              <div className="absolute top-0 right-0 bg-transparent w-[150px] h-[50px]" aria-hidden="true"></div>
             </div>
           </div>
 

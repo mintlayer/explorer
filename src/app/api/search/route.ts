@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCoin, getMatcher } from "@/utils/network";
+import {getCoin, getMatcher, getUrl} from "@/utils/network";
 import { shortenString } from "@/utils/format";
 import { formatML } from "@/utils/numbers";
 
@@ -12,7 +12,11 @@ const delegation_matcher = getMatcher("delegation");
 const token_matcher = getMatcher("token");
 const token_name_matcher = getMatcher("tokenName");
 
+const NODE_API_URL = getUrl();
+
 export const dynamic = "force-dynamic";
+
+
 
 export async function POST(request: Request) {
   let response: any = [];
@@ -111,15 +115,34 @@ export async function POST(request: Request) {
     }
   }
 
-  // check nft endpoint too
+  // is token id match against /token/ticker
   if (params.query.match(token_name_matcher)) {
-    const res = await fetch(process.env.SERVER_URL + "/api/nft/" + params.query, { cache: "no-store" });
-    const nft = await res.json();
+    const res = await fetch(NODE_API_URL + "/token/ticker/" + params.query, { cache: "no-store" });
+    const tokens = await res.json();
 
-    if (!nft.error) {
-      response.push({
-        type: "nft",
-        data: [{ icon: "hash", value: short_query }],
+    // @ts-ignore
+    const uniqueTokens = [...new Set(tokens)];
+
+    // fetch data about all that tokens by ID
+    const tokenData = await Promise.all(
+      uniqueTokens.map(async (token: any) => {
+        const tokenRes = await fetch(NODE_API_URL + "/token/" + token, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const tokenData = await tokenRes.json();
+        return tokenData;
+      }),
+    );
+
+    if (!tokens.error) {
+      tokenData.forEach((token: any, index: number) => {
+        response.push({
+          type: "token",
+          data: [{ icon: "hash", value: token.token_ticker.string }],
+          link: "/token/" + uniqueTokens[index]
+        });
       });
     }
   }
