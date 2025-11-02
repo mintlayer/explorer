@@ -1,35 +1,34 @@
 import { NextResponse } from "next/server";
 import { getUrl } from "@/utils/network";
+import {env} from "next-runtime-env";
 
 const NODE_API_URL = getUrl();
+const network = env("NEXT_PUBLIC_NETWORK") || "testnet";
 
 export const dynamic = "force-dynamic";
 
-async function getTokenRecursive(offset: number, token_ids: any = []): Promise<any> {
-  const res = await fetch(NODE_API_URL + "/token?offset=" + offset, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  const data = await res.json();
-
-  const updated_token_ids = [...token_ids, ...data];
-
-  if (data.length > 10) {
-    return await getTokenRecursive(offset + 10, updated_token_ids);
-  }
-
-  // deduplicate token_ids
-  return updated_token_ids.reduce((acc: any, token: any) => {
-    if (!acc.find((t: any) => t === token)) {
-      acc.push(token);
-    }
-    return acc;
-  }, []);
-}
-
 export async function GET() {
-  const data = await getTokenRecursive(0);
+  // const data = []
+  const res = await fetch(NODE_API_URL + '/batch', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      ids: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150],
+      type: '/token?offset=:address',
+      network: network === 'mainnet' ? 0 : 1,
+    }),
+  })
+
+  const tokens = await res.json();
+
+  const ids = tokens.results.flat();
+
+  // @ts-ignore
+  const uniqueIds = [...new Set(ids)];
+
+  const data = uniqueIds;
 
   // fetch data for each token in loop from data
   const tokenData = await Promise.all(
@@ -43,6 +42,8 @@ export async function GET() {
       return tokenData;
     }),
   );
+
+  console.log('tokenData', JSON.stringify(tokenData, null, 2));
 
   // merge token_id with token data
   const tokenDataWithId = data
@@ -63,7 +64,7 @@ export async function GET() {
         total_supply:
           typeof tokenData[index].total_supply === "string"
             ? tokenData[index].total_supply
-            : tokenData[index].total_supply.Fixed.atoms / tokenData[index].number_of_decimals,
+            : tokenData[index].total_supply.Fixed.atoms / Math.pow(10, tokenData[index].number_of_decimals),
         circulating_supply: tokenData[index].circulating_supply.decimal,
       };
     })

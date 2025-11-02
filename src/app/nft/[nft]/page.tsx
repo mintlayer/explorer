@@ -58,6 +58,7 @@ export default async function Token({ params }: { params: { nft: string } }) {
               <div className="mx-auto md:mb-5 bg-white p-2">
                 {
                   imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
                     <img src={imageUrl}/>
                   ) : <></>
                 }
@@ -69,6 +70,7 @@ export default async function Token({ params }: { params: { nft: string } }) {
                 {
                   iconUrl ?
                     (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={iconUrl} className="w-20 h-20 absolute top-2 right-2" alt=""/>
                     ) : <></>
                 }

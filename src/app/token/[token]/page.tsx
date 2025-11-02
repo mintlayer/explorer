@@ -85,7 +85,7 @@ export default async function Token({ params }: { params: { token: string } }) {
                 {title: "Staked", value: data.staked.decimal, icon: icon_info, iconTooltip: ""},
                 {
                   title: "Total Supply",
-                  value: Object.keys(data.total_supply).map((key) => (`${key}: ${data.total_supply[key].atoms / data.circulating_supply.decimal}`)),
+                  value: Object.keys(data.total_supply).map((key) => (`${key}: ${data.total_supply[key].atoms / Math.pow(10, data.circulating_supply.decimal)}`)),
                   icon: icon_info,
                   iconTooltip: ""
                 },
