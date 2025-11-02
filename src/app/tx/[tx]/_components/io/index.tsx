@@ -47,7 +47,7 @@ export function Io({ data, title, tokens }: IoProps) {
             <div className="flex items-center my-6 ml-3 text-2xl">
               <Image className="mr-2" src={icon_input} alt={""} /> Input
             </div>
-            {data?.inputs?.map((input: any, index: number) => <IOEntry type="input" key={index} data={input} expand={expand} metadata={{ tokens }} />)}
+            {data?.inputs?.map((input: any, index: number) => <IOEntry type="input" index={index} key={'input'+index} data={input} expand={expand} metadata={{ tokens }} />)}
             {data.inputs.length < data.total_inputs && <TransactionLink txId={data.id} />}
           </div>
           <div>
@@ -55,7 +55,7 @@ export function Io({ data, title, tokens }: IoProps) {
               <Image className="mr-2" src={icon_output} alt={""} />
               Output
             </div>
-            {data?.outputs?.map((output: any, index: number) => <IOEntry type="output" key={index} data={output} expand={expand} metadata={{ tokens }} />)}
+            {data?.outputs?.map((output: any, index: number) => <IOEntry type="output" highlight={false} index={index} key={'output'+index} data={output} expand={expand} metadata={{ tokens }} />)}
             {data.outputs.length < data.total_outputs && <TransactionLink txId={data.id} />}
           </div>
         </div>
