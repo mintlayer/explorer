@@ -16,7 +16,7 @@ export function Blocks() {
 
   useEffect(() => {
     const getBlocks = async () => {
-      const res = await fetch("/api/block/last" + (beforeBlocks ? "?before=" + beforeBlocks : ""), { cache: "no-store" });
+      const res = await fetch("/api/block/last", { cache: "no-store" });
       const data = await res.json();
       setBlocks(data);
       setBeforeBlocks(data[data.length - 1].block - 1);

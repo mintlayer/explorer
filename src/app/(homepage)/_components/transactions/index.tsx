@@ -23,7 +23,7 @@ export function Transactions() {
       const res = await fetch("/api/transaction/last", { cache: "no-store" });
       const data = await res.json();
       setTransactions(data);
-      setOffset(offset + 10);
+      setOffset(10);
     };
     getBlocks();
   }, []);

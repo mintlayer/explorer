@@ -130,6 +130,7 @@ export const Search = () => {
   const [results, setResults] = useState<any[]>([]); // [block, tx, address, token]
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const onQueryUpdate = useCallback(
     debounce(async (query: string) => {
       if (abortControllerRef.current) {
