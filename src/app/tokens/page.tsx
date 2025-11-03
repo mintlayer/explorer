@@ -1,6 +1,7 @@
 import { Hero } from "@/app/_components/hero";
 import Link from "next/link";
 import {TokenIcon} from "@/app/tokens/_components/TokenIcon";
+import {formatML} from "@/utils/numbers";
 
 async function getData() {
   const res = await fetch(process.env.SERVER_URL + "/api/token", {
@@ -40,8 +41,8 @@ export default async function Tokens({
       </Hero>
       <div>
         <div className="max-w-6xl md:mx-auto py-6 px-5">
-          <div className="table w-full">
-            <div className="table-header-group bg-white font-semibold">
+          <div className="table w-full bg-white">
+            <div className="table-header-group bg-primary-100 text-white font-semibold">
               <div className="table-cell px-2 py-1 text-center">#</div>
               <div className="table-cell px-2 py-1"></div>
               <div className="table-cell px-2 py-1">Token</div>
@@ -67,8 +68,8 @@ export default async function Tokens({
                 <div className="table-cell px-2 py-1 align-middle">{token.is_locked ? "yes" : "no"}</div>
                 <div className="table-cell px-2 py-1 align-middle">{token.is_token_freezable ? "yes" : "no"}</div>
                 <div className="table-cell px-2 py-1 align-middle">{token.is_token_unfreezable ? "yes" : "no"}</div>
-                <div className="table-cell px-2 py-1 align-middle text-right">{token.total_supply}</div>
-                <div className="table-cell px-2 py-1 align-middle text-right">{token.circulating_supply}</div>
+                <div className="table-cell px-2 py-1 align-middle text-right">{isNaN(token.total_supply) ? token.total_supply : formatML(token.total_supply)}</div>
+                <div className="table-cell px-2 py-1 align-middle text-right">{formatML(token.circulating_supply)}</div>
               </div>
             ))}
           </div>
