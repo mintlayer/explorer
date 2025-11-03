@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { NotFound } from "@/app/_components/not-found";
 import React from "react";
 import {Metadata} from "@/app/nft/[nft]/_components/metadata";
+import {formatML} from "@/utils/numbers";
 
 async function getData(token: any) {
   const headersList = headers();
@@ -50,6 +51,9 @@ export default async function Token({ params }: { params: { token: string } }) {
 
   const metadataUrl = ipfsToHttps(data.metadata_uri.string);
 
+  const totalSupplyType = typeof data.total_supply === 'string' ? data.total_supply : Object.keys(data.total_supply);
+  const totalSupplyValue = data.total_supply[totalSupplyType]?.atoms ? data.total_supply[totalSupplyType].atoms : null;
+
   return (
     <>
       <Hero>
@@ -84,11 +88,17 @@ export default async function Token({ params }: { params: { token: string } }) {
                 {title: "Preminted", value: data.preminted.decimal, icon: icon_info, iconTooltip: ""},
                 {title: "Staked", value: data.staked.decimal, icon: icon_info, iconTooltip: ""},
                 {
-                  title: "Total Supply",
-                  value: Object.keys(data.total_supply).map((key) => (`${key}: ${data.total_supply[key].atoms / Math.pow(10, data.circulating_supply.decimal)}`)),
+                  title: "Total Supply Type",
+                  value: totalSupplyType,
                   icon: icon_info,
                   iconTooltip: ""
                 },
+                ...(totalSupplyValue !== null ? [{
+                  title: "Total Supply",
+                  value: formatML(totalSupplyValue / Math.pow(10, data.number_of_decimals)),
+                  icon: icon_info,
+                  iconTooltip: ""
+                }] : []),
               ]}
             />
           </div>
