@@ -95,7 +95,7 @@ export default async function Token({ params }: { params: { token: string } }) {
                 },
                 ...(totalSupplyValue !== null ? [{
                   title: "Total Supply",
-                  value: formatML(totalSupplyValue / Math.pow(10, data.number_of_decimals)),
+                  value: formatML((totalSupplyValue / Math.pow(10, data.number_of_decimals)).toString()),
                   icon: icon_info,
                   iconTooltip: ""
                 }] : []),
