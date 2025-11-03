@@ -1,5 +1,6 @@
 import { Hero } from "@/app/_components/hero";
 import Link from "next/link";
+import {TokenIcon} from "@/app/tokens/_components/TokenIcon";
 
 async function getData() {
   const res = await fetch(process.env.SERVER_URL + "/api/token", {
@@ -42,6 +43,7 @@ export default async function Tokens({
           <div className="table w-full">
             <div className="table-header-group bg-white font-semibold">
               <div className="table-cell px-2 py-1 text-center">#</div>
+              <div className="table-cell px-2 py-1"></div>
               <div className="table-cell px-2 py-1">Token</div>
               <div className="table-cell px-2 py-1">Frozen</div>
               <div className="table-cell px-2 py-1">Locked</div>
@@ -52,18 +54,21 @@ export default async function Tokens({
             </div>
             {data.map((token: any, index: number) => (
               <div className="table-row hover:bg-secondary-100" key={token.id}>
-                <div className="table-cell px-2 py-1 text-center">{index + 1}</div>
-                <div className="table-cell px-2 py-1">
+                <div className="table-cell px-2 py-1 text-center align-middle">{index + 1}</div>
+                <div className="table-cell py-1 text-center align-middle">
+                  <TokenIcon metadata={token.metadata_uri} ticker={token.token_ticker} />
+                </div>
+                <div className="table-cell px-2 py-1 align-middle">
                   <Link className="text-primary-100 font-bold" href={`/token/${token.id}`}>
                     {token.token_ticker}
                   </Link>
                 </div>
-                <div className="table-cell px-2 py-1">{token.frozen ? "yes" : "no"}</div>
-                <div className="table-cell px-2 py-1">{token.is_locked ? "yes" : "no"}</div>
-                <div className="table-cell px-2 py-1">{token.is_token_freezable ? "yes" : "no"}</div>
-                <div className="table-cell px-2 py-1">{token.is_token_unfreezable ? "yes" : "no"}</div>
-                <div className="table-cell px-2 py-1 text-right">{token.total_supply}</div>
-                <div className="table-cell px-2 py-1 text-right">{token.circulating_supply}</div>
+                <div className="table-cell px-2 py-1 align-middle">{token.frozen ? "yes" : "no"}</div>
+                <div className="table-cell px-2 py-1 align-middle">{token.is_locked ? "yes" : "no"}</div>
+                <div className="table-cell px-2 py-1 align-middle">{token.is_token_freezable ? "yes" : "no"}</div>
+                <div className="table-cell px-2 py-1 align-middle">{token.is_token_unfreezable ? "yes" : "no"}</div>
+                <div className="table-cell px-2 py-1 align-middle text-right">{token.total_supply}</div>
+                <div className="table-cell px-2 py-1 align-middle text-right">{token.circulating_supply}</div>
               </div>
             ))}
           </div>

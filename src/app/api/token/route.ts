@@ -43,8 +43,6 @@ export async function GET() {
     }),
   );
 
-  console.log('tokenData', JSON.stringify(tokenData, null, 2));
-
   // merge token_id with token data
   const tokenDataWithId = data
     .map((token: any, index: number) => {
@@ -61,6 +59,7 @@ export async function GET() {
         is_token_freezable: tokenData[index].is_token_freezable,
         is_token_unfreezable: tokenData[index].is_token_unfreezable,
         token_ticker: tokenData[index].token_ticker.string,
+        metadata_uri: tokenData[index].metadata_uri.string,
         total_supply:
           typeof tokenData[index].total_supply === "string"
             ? tokenData[index].total_supply

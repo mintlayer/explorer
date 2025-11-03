@@ -40,8 +40,6 @@ async function getData(tx: any) {
 
   const data = await res.json();
 
-  console.log('data', data);
-
   if (res.status === 400 || res.status === 404) {
     return { data };
   }
@@ -67,8 +65,6 @@ async function getData(tx: any) {
 export default async function Tx({ params }: { params: { tx: string } }) {
   const tx = params.tx;
   const { data, tokens }: any = await getData(tx);
-
-  console.log('data', data);
 
   if (!data || data.error === "Invalid Txn hash") {
     return <NotFound title={"Transaction not found"} subtitle={"Invalid Transaction Id"} />;
