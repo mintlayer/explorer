@@ -87,8 +87,14 @@ export async function GET(request: Request, { params }: { params: { transaction:
     const { block_height } = chain_tip_data;
 
     // fill utxo with data. There is an issue, utxo is not known but we have source_id and index, need to fetch that and augment to input.utxo
-
     const inputs = data.inputs.map(async ({ input }: any) => {
+      if(!input.input_type) {
+        return {
+          input,
+          utxo: null,
+        };
+      }
+
       if(input.input_type !== 'UTXO'){
         return {
           input,
