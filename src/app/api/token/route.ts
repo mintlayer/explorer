@@ -7,6 +7,15 @@ const network = env("NEXT_PUBLIC_NETWORK") || "testnet";
 
 export const dynamic = "force-dynamic";
 
+const ipfsToHttps = (url: string) => {
+  if(!url.startsWith('ipfs://')){
+    return url;
+  }
+
+  const cleanUrl = url.replace('ipfs://', '').split('/');
+  return `https://${cleanUrl[0]}.ipfs.w3s.link${cleanUrl[1]?'/'+cleanUrl[1]:''}`;
+}
+
 export async function GET() {
   // const data = []
   const res = await fetch(NODE_API_URL + '/batch', {
@@ -43,6 +52,27 @@ export async function GET() {
     }),
   );
 
+  const metadata = await Promise.all(
+    tokenData.map(async (token: any) => {
+      if(token.error){
+        return null;
+      }
+      const metadataUrl = ipfsToHttps(token.metadata_uri.string);
+      console.log('metadataUrl', metadataUrl);
+      if(!metadataUrl){
+        return null;
+      }
+      try {
+        const metadataRes = await fetch(metadataUrl);
+        const metadata = await metadataRes.json();
+        return metadata;
+      } catch (error) {
+        return null;
+      }
+    }),
+  );
+  console.log('metadata', metadata);
+
   // merge token_id with token data
   const tokenDataWithId = data
     .map((token: any, index: number) => {
@@ -65,6 +95,7 @@ export async function GET() {
             ? tokenData[index].total_supply
             : tokenData[index].total_supply.Fixed.atoms / Math.pow(10, tokenData[index].number_of_decimals),
         circulating_supply: tokenData[index].circulating_supply.decimal,
+        metadata: metadata[index],
       };
     })
     .filter((token: any) => !token.error);

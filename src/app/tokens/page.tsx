@@ -57,11 +57,16 @@ export default async function Tokens({
               <div className="table-row hover:bg-secondary-100" key={token.id}>
                 <div className="table-cell px-2 py-1 text-center align-middle">{index + 1}</div>
                 <div className="table-cell py-1 text-center align-middle">
-                  <TokenIcon metadata={token.metadata_uri} ticker={token.token_ticker} />
+                  <TokenIcon metadata_uri={token.metadata_uri} metadata={token.metadata} ticker={token.token_ticker} />
                 </div>
                 <div className="table-cell px-2 py-1 align-middle">
                   <Link className="text-primary-100 font-bold" href={`/token/${token.id}`}>
-                    {token.token_ticker}
+
+                    {
+                      token?.metadata?.name ? (
+                        token?.metadata?.name + ' (' + token.token_ticker + ')'
+                      ) : token.token_ticker
+                    }
                   </Link>
                 </div>
                 <div className="table-cell px-2 py-1 align-middle">{token.frozen ? "yes" : "no"}</div>
