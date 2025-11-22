@@ -12,7 +12,7 @@ import {Metadata} from "@/app/nft/[nft]/_components/metadata";
 import {formatML} from "@/utils/numbers";
 
 async function getData(token: any) {
-  const headersList = headers();
+  const headersList = await headers();
   const authorization = headersList.get("Authorization");
   const res = await fetch(process.env.SERVER_URL + "/api/token/" + token, {
     cache: "no-store",
@@ -33,7 +33,7 @@ async function getData(token: any) {
 }
 
 export default async function Token({ params }: { params: { token: string } }) {
-  const token = params.token;
+  const token = (await params).token;
   const { data }: any = await getData(token);
 
   if (!data) {

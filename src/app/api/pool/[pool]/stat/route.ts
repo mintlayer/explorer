@@ -19,7 +19,7 @@ interface DailyStatEntry {
 }
 
 export async function GET(request: Request, { params }: { params: { pool: string } }) {
-  const pool = params.pool;
+  const pool = (await params).pool;
   const currentTime = Math.floor(Date.now() / 1000);
 
   const dailyStatsPromises = Array.from({ length: 30 }, (_, i) => {

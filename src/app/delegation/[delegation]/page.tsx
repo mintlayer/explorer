@@ -20,7 +20,7 @@ import { formatDate } from "@/utils/format";
 const coin = getCoin();
 
 async function getData(delegation: any) {
-  const headersList = headers();
+  const headersList = await headers();
   const authorization = headersList.get("Authorization");
   const res = await fetch(process.env.SERVER_URL + "/api/delegation/" + delegation, {
     cache: "no-store",
@@ -34,7 +34,7 @@ async function getData(delegation: any) {
 }
 
 export default async function Delegation({ params }: { params: { delegation: string } }) {
-  const delegation = params.delegation;
+  const delegation = (await params).delegation;
   const { data }: any = await getData(delegation);
   const { error } = data;
 
