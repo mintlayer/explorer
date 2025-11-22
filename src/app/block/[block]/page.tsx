@@ -31,7 +31,7 @@ import { Icon } from "@/app/_components/heading_box/icon";
 const coin = getCoin();
 
 async function getData(block: string, transactionsPage: string, transactionsPerPage: string) {
-  const headersList = headers();
+  const headersList = await headers();
   const authorization = headersList.get("Authorization");
   const res = await fetch(process.env.SERVER_URL + "/api/block/" + block + `?transactionsPage=${transactionsPage}&transactionsPerPage=${transactionsPerPage}`, {
     cache: "no-store",
@@ -61,7 +61,7 @@ async function getData(block: string, transactionsPage: string, transactionsPerP
 
 export async function generateMetadata({ params }: any): Promise<Metadata> {
   // read route params
-  const id = params.block;
+  const id = (await params).block;
   return {
     title: "Mintlayer Block #" + params.block,
   };
@@ -75,7 +75,7 @@ export default async function Block({
   searchParams: { transactionsPage: string; transactionsPerPage: string };
 }) {
   const { transactionsPage = "1", transactionsPerPage = "10" } = searchParams;
-  const block = params.block;
+  const block = (await params).block;
   const { data, last, error }: any = await getData(block, transactionsPage, transactionsPerPage);
 
   if (error === "Invalid block Id") {

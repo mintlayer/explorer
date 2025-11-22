@@ -6,7 +6,7 @@ const NODE_API_URL = getUrl();
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: { pool: string } }) {
-  const pool = params.pool;
+  const pool = (await params).pool;
   const res = await fetch(NODE_API_URL + "/pool/" + pool + "/delegations", {
     cache: "no-store",
     headers: {

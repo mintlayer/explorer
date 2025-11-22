@@ -32,7 +32,7 @@ import { Stats } from "@/app/pool/[pool]/_components/stats";
 const coin = getCoin();
 
 async function getData(pool: any) {
-  const headersList = headers();
+  const headersList = await headers();
   const authorization = headersList.get("Authorization");
   const res = await fetch(process.env.SERVER_URL + "/api/pool/" + pool, {
     cache: "no-store",
@@ -59,14 +59,14 @@ async function getData(pool: any) {
 
 export async function generateMetadata({ params }: any): Promise<Metadata> {
   // read route params
-  const id = params.block;
+  const id = (await params).block;
   return {
     title: "Mintlayer Staking Pool | " + params.pool,
   };
 }
 
 export default async function Pool({ params }: { params: { pool: string } }) {
-  const pool = params.pool;
+  const pool = (await params).pool;
   const { data, data_delegations, instruction, guiInstruction }: any = await getData(pool);
 
   const { error } = data;

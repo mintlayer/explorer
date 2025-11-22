@@ -62,8 +62,9 @@ async function augmentOutputsWithSpentStatus(transactionId: string, outputs: any
 }
 
 export async function GET(request: Request, { params }: { params: { transaction: string } }) {
+  const transaction_id = (await params).transaction;
   const getTransaction = async (apiUrl: string) => {
-    const res = await fetch(apiUrl + "/transaction/" + params.transaction, {
+    const res = await fetch(apiUrl + "/transaction/" + transaction_id, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
@@ -119,7 +120,7 @@ export async function GET(request: Request, { params }: { params: { transaction:
     data.inputs = inputs_data;
 
     // Augment outputs with spent status
-    const augmentedOutputs = await augmentOutputsWithSpentStatus(params.transaction, data.outputs || []);
+    const augmentedOutputs = await augmentOutputsWithSpentStatus(transaction_id, data.outputs || []);
 
     return NextResponse.json({
       ...data,
@@ -186,12 +187,12 @@ export async function GET(request: Request, { params }: { params: { transaction:
   const block = await data_block.json();
 
   // Augment outputs with spent status
-  const augmentedOutputs = await augmentOutputsWithSpentStatus(params.transaction, data.outputs || []);
+  const augmentedOutputs = await augmentOutputsWithSpentStatus(transaction_id, data.outputs || []);
 
   response.confirmations = data.confirmations;
   response.fee = data.fee.decimal;
   response.timestamp = data.timestamp;
-  response.hash = params.transaction;
+  response.hash = transaction_id;
   response.inputs = data.inputs;
   response.outputs = augmentedOutputs;
   response.amount = Number(amount);

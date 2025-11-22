@@ -6,7 +6,9 @@ const NODE_API_URL = getUrl();
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: { token: string } }) {
-  const res = await fetch(NODE_API_URL + "/token/" + params.token, {
+  const token = (await params).token;
+
+  const res = await fetch(NODE_API_URL + "/token/" + token, {
     headers: {
       "Content-Type": "application/json",
     },
@@ -14,7 +16,7 @@ export async function GET(request: Request, { params }: { params: { token: strin
   const data = await res.json();
 
   if(data.error === 'Token not found') {
-    const res_nft = await fetch(NODE_API_URL + "/nft/" + params.token, {
+    const res_nft = await fetch(NODE_API_URL + "/nft/" + token, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -30,7 +32,7 @@ export async function GET(request: Request, { params }: { params: { token: strin
     return NextResponse.json(response);
   }
 
-  const res_stats = await fetch(NODE_API_URL + "/statistics/token/" + params.token, {
+  const res_stats = await fetch(NODE_API_URL + "/statistics/token/" + token, {
     headers: {
       "Content-Type": "application/json",
     },
