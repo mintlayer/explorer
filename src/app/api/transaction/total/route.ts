@@ -6,7 +6,7 @@ export const revalidate = 120;
 
 const NODE_API_URL = getUrl();
 
-export async function GET(request: Request, { params }: { params: { block: string } }) {
+export async function GET(request: Request) {
   const res = await fetch(NODE_API_URL + "/transaction", {
     headers: {
       "Content-Type": "application/json",

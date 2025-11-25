@@ -58,13 +58,14 @@ type AddressResponse = {
   };
 };
 
-export async function GET(request: Request, { params }: { params: { block: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ block: string }> }) {
   const { searchParams } = new URL(request.url);
   const transactionsPage = Number(searchParams.get("transactionsPage")) || 1;
   const transactionsPerPage = Number(searchParams.get("transactionsPerPage")) || 10;
+  const block = (await params).block;
 
   const getHash = async (apiUrl: string) => {
-    const chain_height_hash = await fetch(apiUrl + "/chain/" + params.block, {
+    const chain_height_hash = await fetch(apiUrl + "/chain/" + block, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -84,8 +85,8 @@ export async function GET(request: Request, { params }: { params: { block: strin
   };
 
   const getBlockByHeightOrHash = async (apiUrl: string) => {
-    const isHeight = /^[0-9]+$/.test(params.block);
-    let hash = params.block;
+    const isHeight = /^[0-9]+$/.test(block);
+    let hash = block;
 
     if (isHeight) {
       const blockHash = await getHash(apiUrl);

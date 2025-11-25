@@ -35,7 +35,7 @@ type AddressData = {
 };
 
 async function getData(address: string) {
-  const headersList = headers();
+  const headersList = await headers();
   const authorization = headersList.get("Authorization");
   const res = await fetch(process.env.SERVER_URL + "/api/address/" + address, {
     cache: "no-store",
@@ -49,7 +49,7 @@ async function getData(address: string) {
 }
 
 export default async function Address({ params }: { params: { address: string } }) {
-  const address = params.address;
+  const address = (await params).address;
   const data: AddressData = await getData(address);
 
   if (data.error === "Invalid address") {

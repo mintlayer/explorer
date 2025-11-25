@@ -19,9 +19,11 @@ type AddressResponse = {
   note?: string;
 };
 
-export async function GET(request: Request, { params }: { params: { address: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ address: string }> }) {
+  const address = (await params).address;
+
   const getAddress = async (apiUrl: string) => {
-    const res = await fetch(apiUrl + "/address/" + params.address, {
+    const res = await fetch(apiUrl + "/address/" + address, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
@@ -35,7 +37,7 @@ export async function GET(request: Request, { params }: { params: { address: str
 
   if (data.error === "Address not found") {
     let response: AddressResponse = {};
-    response.address = params.address;
+    response.address = address;
     response.wallet = null;
     response.updated_at = "";
     response.block_included = 0;
@@ -50,7 +52,7 @@ export async function GET(request: Request, { params }: { params: { address: str
     const anotherNodeData = await getAddress(NODE_SIDE_API_URL);
 
     let response: AddressResponse = {};
-    response.address = params.address;
+    response.address = (await params).address;
     response.wallet = null;
     response.updated_at = "";
     response.block_included = 0;
@@ -72,7 +74,7 @@ export async function GET(request: Request, { params }: { params: { address: str
 
   const { block_height } = chain_tip_data;
 
-  const res_delegations = await fetch(NODE_API_URL + "/address/" + params.address + "/delegations", {
+  const res_delegations = await fetch(NODE_API_URL + "/address/" + address + "/delegations", {
     cache: "no-store",
     headers: {
       "Content-Type": "application/json",
@@ -114,7 +116,7 @@ export async function GET(request: Request, { params }: { params: { address: str
   let data_utxos = [];
 
   try {
-    const res_utxos = await fetch(NODE_API_URL + "/address/" + params.address + "/all-utxos", {
+    const res_utxos = await fetch(NODE_API_URL + "/address/" + address + "/all-utxos", {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
@@ -297,7 +299,7 @@ export async function GET(request: Request, { params }: { params: { address: str
     "mtc1q83a50h2xe0ka2uzljdf0s0auvuewxs5cvnemc3s",
   ];
 
-  if (isMainNetwork && bridgeTreasuryAddresses.includes(params.address)) {
+  if (isMainNetwork && bridgeTreasuryAddresses.includes(address)) {
     response.note = "This is Bridge Treasury Wallet Address for tokens transitioning from ERC20 to Mintlayer Mainnet.";
   }
 

@@ -10,7 +10,7 @@ import React from "react";
 import {Metadata} from "@/app/nft/[nft]/_components/metadata";
 
 async function getData(nft: any) {
-  const headersList = headers();
+  const headersList = await headers();
   const authorization = headersList.get("Authorization");
   const res = await fetch(process.env.SERVER_URL + "/api/nft/" + nft, {
     cache: "no-store",
@@ -25,7 +25,7 @@ async function getData(nft: any) {
 }
 
 export default async function Token({ params }: { params: { nft: string } }) {
-  const nft = params.nft;
+  const nft = (await params).nft;
   const { data }: any = await getData(nft);
 
   if (!data) {

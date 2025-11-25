@@ -27,7 +27,7 @@ async function getBlocksRecursive(block_id: string, limit: number) {
   return blocks;
 }
 
-export async function GET(request: Request, { params }: { params: { block: string } }) {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const before: number | null = searchParams.get("before") ? parseInt(searchParams.get("before") as string) : null;
   let height: number, id: string;

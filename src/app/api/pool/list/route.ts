@@ -5,7 +5,7 @@ import db from "@/lib/db";
 export const dynamic = "force-dynamic";
 export const revalidate = 120;
 
-export async function GET(request: Request, { params }: { params: { pool: string } }) {
+export async function GET(request: Request) {
   const row: any = db.prepare("SELECT * FROM pools WHERE id = 1").get();
 
   if(!row) {

@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 const NODE_API_URL = getUrl();
 
-export async function GET(request: Request, { params }: { params: { block: string } }) {
+export async function GET(request: Request) {
   const chain_tip = await fetch(NODE_API_URL + "/chain/tip", {
     headers: {
       "Content-Type": "application/json",

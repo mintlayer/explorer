@@ -5,8 +5,9 @@ const NODE_API_URL = getUrl();
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request, { params }: { params: { nft: string } }) {
-  const res = await fetch(NODE_API_URL + "/nft/" + params.nft, {
+export async function GET(request: Request, { params }: { params: Promise<{ nft: string }> }) {
+  const nft = (await params).nft;
+  const res = await fetch(NODE_API_URL + "/nft/" + nft, {
     headers: {
       "Content-Type": "application/json",
     },
@@ -14,7 +15,7 @@ export async function GET(request: Request, { params }: { params: { nft: string 
   const data = await res.json();
 
   if(data.error === 'nft not found') {
-    const res_nft = await fetch(NODE_API_URL + "/nft/" + params.nft, {
+    const res_nft = await fetch(NODE_API_URL + "/nft/" + nft, {
       headers: {
         "Content-Type": "application/json",
       },

@@ -28,7 +28,7 @@ export const metadata = {
 };
 
 async function getData(tx: any) {
-  const headersList = headers();
+  const headersList = await headers();
   const authorization = headersList.get("Authorization");
   const res = await fetch(process.env.SERVER_URL + "/api/transaction/" + tx, {
     cache: "no-store",
@@ -63,7 +63,7 @@ async function getData(tx: any) {
 }
 
 export default async function Tx({ params }: { params: { tx: string } }) {
-  const tx = params.tx;
+  const tx = (await params).tx;
   const { data, tokens }: any = await getData(tx);
 
   if (!data || data.error === "Invalid Txn hash") {

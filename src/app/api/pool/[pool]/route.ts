@@ -11,8 +11,8 @@ const NODE_SIDE_API_URL = getUrlSide();
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request, { params }: { params: { pool: string } }) {
-  const pool = params.pool;
+export async function GET(request: Request, { params }: { params: Promise<{ pool: string }> }) {
+  const pool = (await params).pool;
   const getPool = async (apiUrl: string) => {
     const res = await fetch(apiUrl + "/pool/" + pool, {
       cache: "no-store",
