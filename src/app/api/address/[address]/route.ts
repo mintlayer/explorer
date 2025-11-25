@@ -19,7 +19,7 @@ type AddressResponse = {
   note?: string;
 };
 
-export async function GET(request: Request, { params }: { params: { address: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ address: string }> }) {
   const address = (await params).address;
 
   const getAddress = async (apiUrl: string) => {

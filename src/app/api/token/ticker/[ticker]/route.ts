@@ -5,8 +5,9 @@ const NODE_API_URL = getUrl();
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request, { params }: { params: { ticker: string } }) {
-  const res = await fetch(NODE_API_URL + "/token/ticker/" + params.ticker, {
+export async function GET(request: Request, { params }: { params: Promise<{ ticker: string }> }) {
+  const ticker = (await params).ticker;
+  const res = await fetch(NODE_API_URL + "/token/ticker/" + ticker, {
     headers: {
       "Content-Type": "application/json",
     },

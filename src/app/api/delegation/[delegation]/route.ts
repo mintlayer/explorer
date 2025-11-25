@@ -6,7 +6,7 @@ const NODE_SIDE_API_URL = getUrlSide();
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request, { params }: { params: { delegation: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ delegation: string }> }) {
   const getDelegation = async (apiUrl: string) => {
     const delegation = (await params).delegation;
     const res = await fetch(apiUrl + "/delegation/" + delegation, {

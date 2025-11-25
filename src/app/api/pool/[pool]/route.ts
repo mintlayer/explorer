@@ -11,7 +11,7 @@ const NODE_SIDE_API_URL = getUrlSide();
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request, { params }: { params: { pool: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ pool: string }> }) {
   const pool = (await params).pool;
   const getPool = async (apiUrl: string) => {
     const res = await fetch(apiUrl + "/pool/" + pool, {

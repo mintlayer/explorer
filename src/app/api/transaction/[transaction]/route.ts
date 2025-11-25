@@ -61,7 +61,7 @@ async function augmentOutputsWithSpentStatus(transactionId: string, outputs: any
   return augmentedOutputs;
 }
 
-export async function GET(request: Request, { params }: { params: { transaction: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ transaction: string }> }) {
   const transaction_id = (await params).transaction;
   const getTransaction = async (apiUrl: string) => {
     const res = await fetch(apiUrl + "/transaction/" + transaction_id, {

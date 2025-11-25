@@ -5,7 +5,7 @@ const NODE_API_URL = getUrl();
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request, { params }: { params: { token: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const token = (await params).token;
 
   const res = await fetch(NODE_API_URL + "/token/" + token, {

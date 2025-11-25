@@ -58,7 +58,7 @@ type AddressResponse = {
   };
 };
 
-export async function GET(request: Request, { params }: { params: { block: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ block: string }> }) {
   const { searchParams } = new URL(request.url);
   const transactionsPage = Number(searchParams.get("transactionsPage")) || 1;
   const transactionsPerPage = Number(searchParams.get("transactionsPerPage")) || 10;
