@@ -2,8 +2,8 @@
 
 import React from 'react';
 
-export const Metadata = ({ metadataUrl }: any) => {
-  const [metadata, setMetadata] = React.useState<any>(null);
+export const Metadata = ({ metadataUrl, metadata }: any) => {
+  const [loadedmetadata, setMetadata] = React.useState<any>(null);
 
   React.useEffect(() => {
     if (metadataUrl) {
@@ -14,6 +14,10 @@ export const Metadata = ({ metadataUrl }: any) => {
         });
     }
   }, [metadataUrl]);
+
+  if (metadataUrl && !metadata) {
+    return <div>Loading...</div>;
+  }
 
   return metadata ? (
     <div className="bg-white px-6 pb-6 w-full">
