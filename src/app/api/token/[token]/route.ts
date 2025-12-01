@@ -5,6 +5,16 @@ const NODE_API_URL = getUrl();
 
 export const dynamic = "force-dynamic";
 
+const ipfsToHttps = (url: string) => {
+  if(!url.startsWith('ipfs://')){
+    return url;
+  }
+
+  const cleanUrl = url.replace('ipfs://', '').split('/');
+  return `https://${cleanUrl[0]}.ipfs.w3s.link${cleanUrl[1]?'/'+cleanUrl[1]:''}`;
+}
+
+
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const token = (await params).token;
 
@@ -38,6 +48,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
     },
   });
   const data_stats = await res_stats.json();
+
+  const metadataUrl = ipfsToHttps(data.metadata_uri.string);
+  const metadataRes = await fetch(metadataUrl).catch(() => {
+    data.metadata_invalid = true;
+    return null;
+  });
+  const metadata = metadataRes && await metadataRes.json().catch(() => {
+    data.metadata_invalid = true;
+    return null;
+  });
+  data.metadata = metadata;
+
+  if(data.metadata?.tokenIcon){
+    data.tokenIcon = ipfsToHttps(data.metadata.tokenIcon);
+  }
 
   let response: any = {};
 
