@@ -1,5 +1,10 @@
 node_modules
+.next
+docker
+.git
+.gitignore
 npm-debug.log
-Dockerfile
-docker-compose.yml
-.dockerignore
+next-env.d.ts
+*.md
+.env
+.DS_Store
