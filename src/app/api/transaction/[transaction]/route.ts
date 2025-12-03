@@ -47,7 +47,8 @@ async function augmentOutputsWithSpentStatus(transactionId: string, outputs: any
 
       return {
         ...output,
-        spent: spentData.spent || false
+        spent: spentData.spent_at_block_height ? true : false,
+        ...(spentData.spent_at_block_height && {spend_block : spentData.spent_at_block_height}),
       };
     } catch (error) {
       console.warn(`Error fetching spent status for ${transactionId}/output/${index}:`, error);
