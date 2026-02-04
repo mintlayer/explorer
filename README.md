@@ -44,7 +44,6 @@ Configure the following environment variables:
 ```env
 # Network configuration (testnet or mainnet)
 NETWORK=testnet
-NEXT_PUBLIC_NETWORK=testnet
 
 # Server URL for the application
 SERVER_URL=http://localhost:3000
@@ -150,7 +149,6 @@ docker build -t mintlayer-explorer .
 ```bash
 docker run -p 3000:3000 \
   -e NETWORK=testnet \
-  -e NEXT_PUBLIC_NETWORK=testnet \
   mintlayer-explorer
 ```
 
@@ -167,7 +165,6 @@ services:
       - "3000:3000"
     environment:
       - NETWORK=testnet
-      - NEXT_PUBLIC_NETWORK=testnet
       - SERVER_URL=http://localhost:3000
     volumes:
       - ./data.db:/usr/src/app/data.db

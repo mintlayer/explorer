@@ -1,47 +1,30 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 
-const mainnetColors = {
-  primary: {
-    100: "rgba(17, 150, 127, 1)",
-    110: "rgba(13, 118, 100, 1)",
-  },
-  secondary: {
-    100: "rgba(216, 231, 229, 1)",
-    110: "rgba(186, 212, 209, 1)",
-  },
-  base: {
-    dark: "rgba(12, 39, 34, 1)",
-    gray: "rgba(94, 114, 110, 1)",
-    black: "rgba(12, 39, 34, 1)",
-    gray40: "rgba(148, 164, 161, 1)",
-  },
-  background: "rgba(241, 243, 243, 1)",
-};
-
-const testnetColors = {
-  primary: {
-    100: "rgba(148, 164, 161, 1)",
-    110: "rgba(94, 114, 110, 1)",
-  },
-  secondary: {
-    100: "rgba(226, 236, 235, 0.8)",
-    110: "rgba(206, 222, 220, 0.8)",
-  },
-  base: {
-    dark: "rgba(12, 39, 34, 1)",
-    gray: "rgba(94, 114, 110, 1)",
-    black: "rgba(12, 39, 34, 1)",
-    gray40: "rgba(148, 164, 161, 1)",
-  },
-  background: "rgba(241, 243, 243, 1)",
-};
+const withOpacity = (cssVar: string) => `rgb(var(${cssVar}) / <alpha-value>)`;
+const withAlphaVar = (cssVar: string, alphaVar: string) => `rgb(var(${cssVar}) / var(${alphaVar}, <alpha-value>))`;
 
 const config: Config = {
   content: ["./src/pages/**/*.{js,ts,jsx,tsx,mdx}", "./src/components/**/*.{js,ts,jsx,tsx,mdx}", "./src/app/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
-      colors: process.env.NEXT_PUBLIC_NETWORK === "mainnet" ? mainnetColors : testnetColors,
+      colors: {
+        primary: {
+          100: withOpacity("--color-primary-100"),
+          110: withOpacity("--color-primary-110"),
+        },
+        secondary: {
+          100: withAlphaVar("--color-secondary-100", "--color-secondary-100-alpha"),
+          110: withAlphaVar("--color-secondary-110", "--color-secondary-110-alpha"),
+        },
+        base: {
+          dark: withOpacity("--color-base-dark"),
+          gray: withOpacity("--color-base-gray"),
+          black: withOpacity("--color-base-black"),
+          gray40: withOpacity("--color-base-gray40"),
+        },
+        background: withOpacity("--color-background"),
+      },
       backgroundImage: {
         "circle-1": "radial-gradient(42.13% 42.13% at 50% 50%, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%)",
         "circle-2": "radial-gradient(48.26% 48.26% at 46.01% 56.3%, #84B0A8 4.69%, rgba(226, 250, 246, 0) 100%)",

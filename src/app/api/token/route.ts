@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { getUrl } from "@/utils/network";
-import {env} from "next-runtime-env";
+import { getNetwork, getUrl } from "@/utils/network";
 
 const NODE_API_URL = getUrl();
-const network = env("NEXT_PUBLIC_NETWORK") || "testnet";
+const network = getNetwork();
 
 export const dynamic = "force-dynamic";
 

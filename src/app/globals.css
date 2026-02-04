@@ -6,7 +6,26 @@
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 241, 243, 243;
 
-  --secondary-100: rgba(216, 231, 229, 1);
+  --color-primary-100: 148 164 161;
+  --color-primary-110: 94 114 110;
+  --color-secondary-100: 226 236 235;
+  --color-secondary-100-alpha: 0.8;
+  --color-secondary-110: 206 222 220;
+  --color-secondary-110-alpha: 0.8;
+  --color-base-dark: 12 39 34;
+  --color-base-gray: 94 114 110;
+  --color-base-black: 12 39 34;
+  --color-base-gray40: 148 164 161;
+  --color-background: 241 243 243;
+}
+
+:root[data-network="mainnet"] {
+  --color-primary-100: 17 150 127;
+  --color-primary-110: 13 118 100;
+  --color-secondary-100: 216 231 229;
+  --color-secondary-100-alpha: 1;
+  --color-secondary-110: 186 212 209;
+  --color-secondary-110-alpha: 1;
 }
 
 body {
