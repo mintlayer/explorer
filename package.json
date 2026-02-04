@@ -23,7 +23,7 @@
     "eslint-config-next": "^16.0.3",
     "next": "^16.0.7",
     "next-qrcode": "^2.5.1",
-    "next-runtime-env": "^3.2.2",
+    "next-runtime-env": "^2.0.1",
     "postcss": "^8.5.2",
     "react": "^19.2.0",
     "react-content-loader": "^6.2.1",
