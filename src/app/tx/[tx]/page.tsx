@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { Summary } from "@/app/_components/summary";
 import { Hero } from "@/app/_components/hero";
@@ -62,15 +63,51 @@ async function getData(tx: any) {
   return { data, tokens };
 }
 
+async function getBlock(tx: string) {
+  const headersList = await headers();
+  const authorization = headersList.get("Authorization");
+  const res = await fetch(process.env.SERVER_URL + "/api/block/" + tx, {
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      ...(authorization && { Authorization: authorization }),
+    },
+  });
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const data = await res.json();
+
+  if (data?.error) {
+    return null;
+  }
+
+  return data;
+}
+
 export default async function Tx({ params }: { params: { tx: string } }) {
   const tx = (await params).tx;
   const { data, tokens }: any = await getData(tx);
 
   if (!data || data.error === "Invalid Txn hash") {
+    const block = await getBlock(tx);
+
+    if (block) {
+      redirect(`/block/${tx}`);
+    }
+
     return <NotFound title={"Transaction not found"} subtitle={"Invalid Transaction Id"} />;
   }
 
   if (data.error === "Transaction not found") {
+    const block = await getBlock(tx);
+
+    if (block) {
+      redirect(`/block/${tx}`);
+    }
+
     return <NotFound title={"Transaction not found"} subtitle={"Transaction not found"} id={tx} />;
   }
 
@@ -193,13 +230,13 @@ export default async function Tx({ params }: { params: { tx: string } }) {
                   },
                   ...(data.timestamp === "" && data.confirmations === 0
                     ? [
-                        {
-                          title: "Status",
-                          value: "Unconfirmed",
-                          icon: icon_time,
-                          iconTooltip: "Status",
-                        },
-                      ]
+                      {
+                        title: "Status",
+                        value: "Unconfirmed",
+                        icon: icon_time,
+                        iconTooltip: "Status",
+                      },
+                    ]
                     : []),
                   {
                     title: "Version",
