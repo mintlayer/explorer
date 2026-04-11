@@ -17,7 +17,7 @@ const ipfsToHttps = (url: string) => {
 
 export async function GET() {
   // const data = []
-  const res = await fetch(NODE_API_URL + '/batch', {
+  const res = await fetch('https://mojito-api.mintlayer.org/mintlayer/' + (network === 'mainnet' ? 'mainnet' : 'testnet') + '/batch', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
