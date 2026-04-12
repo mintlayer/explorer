@@ -10,7 +10,9 @@
     "prepare": "husky install",
     "test": "jest",
     "start:worker": "node ./workers/pools.js",
-    "sync:explorer-cache": "node ./workers/pools.js"
+    "sync:explorer-cache": "node ./workers/pools.js",
+    "sync:recent-chain": "node ./workers/recent-chain.js",
+    "sync:catalog": "node ./workers/pools.js"
   },
   "dependencies": {
     "@mintlayer/sdk": "^1.0.21",

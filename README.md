@@ -95,18 +95,26 @@ If Postgres is not configured, API routes still work in fallback mode, but the f
 
 ### 5. Populate Explorer Cache
 
-To prewarm the explorer and reduce external API round-trips, run the cache worker:
+The cache is now split into two workers:
+
+```bash
+npm run sync:recent-chain
+npm run sync:catalog
+```
+
+Use the fast worker for blocks/transactions and the heavier worker for pools/statistics/tokens/NFT. The legacy command still exists:
 
 ```bash
 npm run start:worker
 ```
 
-This script:
-- fetches latest transactions
-- fetches latest blocks
-- fetches pools, delegations and pool statistics
-- fetches token and NFT indexes
-- stores the processed data in PostgreSQL
+Workers:
+- `npm run sync:recent-chain`
+  updates latest transactions and latest blocks in PostgreSQL
+- `npm run sync:catalog`
+  updates pools, delegations, pool statistics, tokens and NFT indexes
+- `npm run start:worker`
+  currently aliases the catalog worker for backward compatibility
 
 **Note**: Run this periodically to keep pool data up-to-date. Consider setting up a cron job for production environments.
 
@@ -129,8 +137,10 @@ npm run build        # Build for production
 npm run start        # Start production server
 
 # Data Management
-npm run start:worker        # Sync explorer cache into PostgreSQL
-npm run sync:explorer-cache # Alias for the cache sync worker
+npm run sync:recent-chain   # Fast sync for latest blocks and transactions
+npm run sync:catalog        # Heavy sync for pools, stats, tokens and NFT
+npm run start:worker        # Backward-compatible catalog sync
+npm run sync:explorer-cache # Alias for the catalog sync worker
 
 # Code Quality
 npm run lint         # Run ESLint
@@ -156,7 +166,9 @@ explorer/
 │   ├── providers/          # React context providers
 │   └── utils/              # Utility functions
 ├── workers/                # Background workers
-│   └── pools.js           # Explorer cache sync worker
+│   ├── pools.js           # Catalog sync worker
+│   ├── recent-chain.js    # Fast recent blocks/transactions sync
+│   └── lib/               # Shared worker logic
 ├── public/                 # Static assets
 ├── .env                   # Environment variables template
 └── PostgreSQL            # Primary explorer cache
@@ -246,11 +258,14 @@ npm start
 
 ### 3. Set Up Cache Updates
 
-Set up a cron job to refresh the explorer cache:
+Set up separate cron jobs for fast-moving chain data and heavier catalog data:
 
 ```bash
-# Update cache every 5 minutes
-*/5 * * * * cd /path/to/mintlayer-explorer && npm run start:worker
+# Update recent blocks and transactions every minute
+* * * * * cd /path/to/mintlayer-explorer && npm run sync:recent-chain
+
+# Update pools, pool stats, tokens and NFT every 10 minutes
+*/10 * * * * cd /path/to/mintlayer-explorer && npm run sync:catalog
 ```
 
 ## 🔍 Troubleshooting
@@ -259,7 +274,7 @@ Set up a cron job to refresh the explorer cache:
 
 1. **Cached explorer data not showing**
    - Set `DATABASE_URL` or `POSTGRES_URL`
-   - Run `npm run start:worker` to populate PostgreSQL
+   - Run `npm run sync:recent-chain` and `npm run sync:catalog` to populate PostgreSQL
    - Check network connectivity to Mintlayer API servers
 
 2. **PostgreSQL connection issues**
