@@ -1,71 +1,35 @@
 import { NextResponse } from "next/server";
-import { getUrl, getUrlSide, isMainNetwork } from "@/utils/network";
-import {
-  effective_pool_balance,
-  Network,
-  Amount,
-} from "@/utils/mintlayer-crypto/pkg";
-
-const NODE_API_URL = getUrl();
-const NODE_SIDE_API_URL = getUrlSide();
+import { fetchPoolDelegationsFromApi, fetchPoolDetailsFromApi } from "@/lib/explorer-source";
+import { getPoolDelegationsFromDb, getPoolFromDb, savePoolDelegationsToDb, savePoolsToDb } from "@/lib/explorer-store";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: Promise<{ pool: string }> }) {
   const pool = (await params).pool;
-  const getPool = async (apiUrl: string) => {
-    const res = await fetch(apiUrl + "/pool/" + pool, {
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-      },
+  const cachedPool = await getPoolFromDb(pool);
+  const cachedDelegations = await getPoolDelegationsFromDb(pool);
+
+  if (cachedPool) {
+    return NextResponse.json({
+      ...cachedPool,
+      pool: cachedPool.pool ?? cachedPool.pool_id ?? pool,
+      pool_id: cachedPool.pool_id ?? cachedPool.pool ?? pool,
+      margin_ratio_percent: cachedPool.margin_ratio_percent ?? cachedPool.margin_ratio_per_thousand,
+      pool_balance: cachedPool.pool_balance ?? cachedPool.balance?.toString?.() ?? "0",
+      delegations_balance: cachedPool.delegations_balance ?? cachedPool.delegations_amount?.toString?.() ?? "0",
+      mark: cachedPool.mark ?? 0,
+      delegations_count: cachedPool.delegations_count ?? cachedDelegations.length,
     });
-    const data = await res.json();
-    return data;
-  };
-
-  const data = await getPool(NODE_API_URL);
-
-  if (data.error) {
-    const anotherNodeData = await getPool(NODE_SIDE_API_URL);
-
-    if (anotherNodeData.vrf_public_key) {
-      return NextResponse.json({ error: "Pool found in another network" }, { status: 404 });
-    }
-    return NextResponse.json({ error: "Invalid pool Id" }, { status: 404 });
   }
 
-  const res = await fetch(NODE_API_URL + "/pool/" + pool + "/delegations", {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const response = await fetchPoolDetailsFromApi(pool);
 
-  const delegations = await res.json();
+  if (response.error) {
+    return NextResponse.json(response, { status: 404 });
+  }
 
-  const delegations_balance = delegations.reduce((acc: number, delegation: any) => +acc + parseInt(delegation.balance.atoms), 0);
-
-  const network = isMainNetwork ? Network.Mainnet : Network.Testnet;
-
-  let response: any = {};
-
-  response.pool = pool;
-
-  const pool_balance = (BigInt(data.staker_balance.atoms) + BigInt(delegations_balance)).toString();
-
-  // @ts-ignore
-  response.pool_balance = (pool_balance / 1e11).toString();
-  // @ts-ignore
-  response.effective_pool_balance = (effective_pool_balance(network, Amount.from_atoms(data.staker_balance.atoms), Amount.from_atoms(pool_balance)).atoms() / 1e11).toString();
-  response.cost_per_block = data.cost_per_block.decimal;
-  response.margin_ratio_per_thousand = data.margin_ratio_per_thousand.replace("%", "") * 10;
-  response.margin_ratio = (data.margin_ratio_per_thousand.replace("%", "") * 10) / 1000;
-  response.margin_ratio_percent = data.margin_ratio_per_thousand;
-  response.staker_balance = data.staker_balance.decimal;
-  response.vrf_public_key = data.vrf_public_key;
-  response.decommission_destination = data.decommission_destination;
-  response.delegations_balance = (delegations_balance / 1e11).toString();
-  response.mark = 0;
+  const delegations = cachedDelegations.length ? cachedDelegations : await fetchPoolDelegationsFromApi(pool);
+  await Promise.all([savePoolsToDb([response]), savePoolDelegationsToDb(pool, delegations)]);
 
   return NextResponse.json(response);
 }

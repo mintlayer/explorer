@@ -21,13 +21,13 @@ import {WalletConnect} from "@/app/_components/wallet_connect";
 
 const coin = getCoin();
 
-export function Table() {
+export function Table({ initialPools, initialBlockHeight, initialDifficulty }: { initialPools: any[]; initialBlockHeight: number; initialDifficulty: number }) {
   const { detected, delegations, balance, handleConnect, handleDelegate, handleAddFunds, handleWithdraw, refreshDelegations } = useWallet();
-  const [pools, setPools] = useState<any>([]);
+  const [pools, setPools] = useState<any[]>(initialPools);
   const [orderField, setOrderField] = useState<any>("pool_id");
-  const [blockHeight, setBlockHeight] = useState<any>(0);
+  const [blockHeight, setBlockHeight] = useState<any>(initialBlockHeight);
   const [order, setOrder] = useState<any>("asc");
-  const [difficulty, setDifficulty] = useState<any>(0);
+  const [difficulty, setDifficulty] = useState<any>(initialDifficulty);
   const [hideNonProfitPools, setHideNonProfitPools] = useState<any>(true);
   const [showOnlyMyPools, setShowOnlyMyPools] = useState<any>(false);
   const [stakingAmountRaw, setStakingAmount] = useState<any>("1000");
@@ -58,29 +58,6 @@ export function Table() {
   const apyCalculator = difficulty !== 0;
 
   const stakingAmount = parseFloat(stakingAmountRaw.replace(/[^0-9.]/g, "")) || 0;
-
-  useEffect(() => {
-    const getBlocks: any = async (offset: number, pools_data: any) => {
-      const res = await fetch("/api/pool/list?withBalance=1&" + (offset ? "&offset=" + offset : ""), { cache: "no-store" });
-      const data = await res.json();
-      if (data.length > 0) {
-        setPools(data);
-      }
-    };
-    getBlocks();
-  }, []);
-
-  useEffect(() => {
-    const getDifficulty: any = async () => {
-      const res = await fetch("/api/block/last", { cache: "no-store" });
-      const data = await res.json();
-      const [block] = data;
-      const difficulty = block?.target_difficulty;
-      setDifficulty(difficulty);
-      setBlockHeight(block.block);
-    };
-    getDifficulty();
-  }, []);
 
   // Enhanced sorter for number fields and delegation-based sorting
   const sorter = (a: any, b: any) => {

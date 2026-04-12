@@ -5,12 +5,15 @@ import { Summary } from "@/app/pools/_components/summary";
 
 import { WalletConnect } from "@/app/_components/wallet_connect";
 import SaveToLocalStorage from "@/app/pools/_components/savetostorage";
+import { getPoolSummaryData, getPoolsListData } from "@/lib/explorer-ssr";
 
 export const metadata = {
   title: "Mintlayer Staking Pools",
 };
 
 export default async function Pool() {
+  const [summaryData, poolsListData] = await Promise.all([getPoolSummaryData(), getPoolsListData()]);
+
   return (
     <>
       <Hero>
@@ -20,7 +23,7 @@ export default async function Pool() {
           </div>
           <div className="grid md:grid-cols-12 gap-4 mb-8">
             <div className="md:col-span-12 grid grid-cols-1 md:grid-rows-2 md:grid-cols-6 grid-rows-1 gap-4">
-              <Summary />
+              <Summary data={summaryData} />
             </div>
           </div>
         </div>
@@ -29,7 +32,11 @@ export default async function Pool() {
       <SaveToLocalStorage />
 
       <div className="w-full mx-auto my-8 px-5">
-        <Table />
+        <Table
+          initialPools={poolsListData.pools}
+          initialBlockHeight={poolsListData.blockHeight}
+          initialDifficulty={poolsListData.difficulty}
+        />
       </div>
     </>
   );

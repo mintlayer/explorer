@@ -1,13 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Transaction } from "@/app/(homepage)/_components/transaction";
 
-export function Transactions() {
-  const [transactions, setTransactions] = useState<any>(null);
+export function Transactions({ initialTransactions }: { initialTransactions: any[] }) {
+  const [transactions, setTransactions] = useState<any[]>(initialTransactions);
   const [loading, setLoading] = useState<boolean>(false);
-
-  const [offset, setOffset] = useState<any>(0);
+  const [offset, setOffset] = useState<number>(initialTransactions.length);
 
   const getBlocks = async () => {
     setLoading(true);
@@ -17,28 +16,6 @@ export function Transactions() {
     setOffset(offset + 10);
     setLoading(false);
   };
-
-  useEffect(() => {
-    const getBlocks = async () => {
-      const res = await fetch("/api/transaction/last", { cache: "no-store" });
-      const data = await res.json();
-      setTransactions(data);
-      setOffset(10);
-    };
-    getBlocks();
-  }, []);
-
-  if (!transactions)
-    return (
-      <>
-        <Transaction skeleton />
-        <Transaction skeleton />
-        <Transaction skeleton />
-        <Transaction skeleton />
-        <Transaction skeleton />
-        <Transaction skeleton />
-      </>
-    );
 
   return (
     <>

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { getUrl } from "@/utils/network";
-
-const NODE_API_URL = getUrl();
+import { fetchPoolStatsFromApi } from "@/lib/explorer-source";
+import { getPoolStatsFromDb, savePoolStatsToDb } from "@/lib/explorer-store";
 
 export const dynamic = "force-dynamic";
 
@@ -20,33 +19,15 @@ interface DailyStatEntry {
 
 export async function GET(request: Request, { params }: { params: Promise<{ pool: string }> }) {
   const pool = (await params).pool;
-  const currentTime = Math.floor(Date.now() / 1000);
-
-  const dailyStatsPromises = Array.from({ length: 30 }, (_, i) => {
-    const dayEnd = currentTime - (i * 86400);
-    const dayStart = dayEnd - 86400;
-
-    return fetch(
-      `${NODE_API_URL}/pool/${pool}/block-stats?from=${dayStart}&to=${dayEnd}`,
-      {
-        cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    ).then(res => res.json().then(data => ({
-      date: new Date(dayStart * 1000).toISOString().split('T')[0], // Format as YYYY-MM-DD
-      stats: data
-    })));
-  });
+  const cachedStats = await getPoolStatsFromDb(pool);
 
   try {
-    const dailyStats: DailyStatEntry[] = await Promise.all(dailyStatsPromises);
+    if (Object.keys(cachedStats).length > 0) {
+      return NextResponse.json(cachedStats);
+    }
 
-    const response: DailyStats = dailyStats.reduce((acc: DailyStats, { date, stats }: DailyStatEntry) => {
-      acc[date] = stats;
-      return acc;
-    }, {} as DailyStats);
+    const response = await fetchPoolStatsFromApi(pool);
+    await savePoolStatsToDb(pool, response);
 
     return NextResponse.json(response);
   } catch (error) {

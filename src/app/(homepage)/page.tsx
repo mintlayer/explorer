@@ -11,6 +11,7 @@ import { Summary } from "@/app/(homepage)/_components/summary";
 import transactions from "./_icons/24px/transactions.svg";
 import block from "./_icons/24px/block.svg";
 import React from "react";
+import { getHomepageBlocks, getHomepageTransactions, getPoolSummaryData, getTransactionTotal } from "@/lib/explorer-ssr";
 
 const menuLinks = [
   { label: "Transactions", href: "/transactions" },
@@ -21,6 +22,13 @@ const menuLinks = [
 ];
 
 export default async function Home() {
+  const [transactionsData, blocksData, poolSummaryData, transactionTotal] = await Promise.all([
+    getHomepageTransactions(10),
+    getHomepageBlocks(10),
+    getPoolSummaryData(),
+    getTransactionTotal(),
+  ]);
+
   return (
     <>
       <div className="w-full bg-secondary-100">
@@ -36,7 +44,7 @@ export default async function Home() {
               <Search />
             </div>
             <div className="md:col-span-5 grid grid-cols-2 grid-rows-1 gap-4 md:mt-8">
-              <Summary />
+              <Summary data={poolSummaryData} data_transaction={transactionTotal} />
               <div className="col-span-2 bg-white text-center text-xs py-1.5 px-3">
                 Do you have any data to suggest?{" "}
                 <a href="mailto:support@mintlayer.org" className="text-primary-100 underline">
@@ -67,12 +75,12 @@ export default async function Home() {
           <div className="relative grid md:grid-cols-12 gap-6 mb-5 mt-4 md:mt-8 -mx-6 md:mx-0">
             <div className="md:col-span-7 col-span-1">
               <ColumnBox title="Latest Transactions" icon={<Image src={transactions} alt="" />}>
-                <Transactions />
+                <Transactions initialTransactions={transactionsData} />
               </ColumnBox>
             </div>
             <div className="md:col-span-5 col-span-1">
               <ColumnBox title="Latest Blocks" icon={<Image src={block} alt="" />}>
-                <Blocks />
+                <Blocks initialBlocks={blocksData} />
               </ColumnBox>
             </div>
           </div>

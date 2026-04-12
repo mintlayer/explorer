@@ -67,21 +67,46 @@ ER20_DATA_SERVER_URL=https://token.api.mintlayer.org/api
 
 ### 4. Database Setup
 
-The application uses SQLite for caching pool data. The database will be automatically created when you first the pool worker.
+PostgreSQL is now the primary explorer cache for:
+- pools and delegations
+- pool daily statistics
+- latest blocks
+- latest transactions
+- tokens
+- NFTs
 
-### 5. Populate Pool Data
+Configure one of these variables:
 
-To display pool information, you need to run the pool data worker:
+```env
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/mintlayer_explorer
+# or
+POSTGRES_URL=postgres://postgres:postgres@localhost:5432/mintlayer_explorer
+```
+
+Optional cache controls:
+
+```env
+EXPLORER_RECENT_TRANSACTIONS_LIMIT=100
+EXPLORER_RECENT_BLOCKS_LIMIT=100
+POSTGRES_POOL_SIZE=10
+```
+
+If Postgres is not configured, API routes still work in fallback mode, but the fast `DB first` path is disabled.
+
+### 5. Populate Explorer Cache
+
+To prewarm the explorer and reduce external API round-trips, run the cache worker:
 
 ```bash
 npm run start:worker
 ```
 
 This script:
-- Fetches all pools from the Mintlayer API
-- Retrieves delegation information for each pool
-- Calculates effective pool balances
-- Stores the processed data in the local SQLite database
+- fetches latest transactions
+- fetches latest blocks
+- fetches pools, delegations and pool statistics
+- fetches token and NFT indexes
+- stores the processed data in PostgreSQL
 
 **Note**: Run this periodically to keep pool data up-to-date. Consider setting up a cron job for production environments.
 
@@ -104,7 +129,8 @@ npm run build        # Build for production
 npm run start        # Start production server
 
 # Data Management
-npm run start:worker # Populate pool data
+npm run start:worker        # Sync explorer cache into PostgreSQL
+npm run sync:explorer-cache # Alias for the cache sync worker
 
 # Code Quality
 npm run lint         # Run ESLint
@@ -130,10 +156,10 @@ explorer/
 │   ├── providers/          # React context providers
 │   └── utils/              # Utility functions
 ├── workers/                # Background workers
-│   └── pools.js           # Pool data fetcher
+│   └── pools.js           # Explorer cache sync worker
 ├── public/                 # Static assets
 ├── .env                   # Environment variables template
-└── data.db               # SQLite database (auto-generated)
+└── PostgreSQL            # Primary explorer cache
 ```
 
 ## 🐳 Docker Support
@@ -166,6 +192,7 @@ services:
     environment:
       - NETWORK=testnet
       - SERVER_URL=http://localhost:3000
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/mintlayer_explorer
     volumes:
       - ./data.db:/usr/src/app/data.db
 ```
@@ -217,27 +244,27 @@ npm run build
 npm start
 ```
 
-### 3. Set Up Pool Data Updates
+### 3. Set Up Cache Updates
 
-Set up a cron job to regularly update pool data:
+Set up a cron job to refresh the explorer cache:
 
 ```bash
-# Update pool data every 10 minutes
-*/10 * * * * cd /path/to/mintlayer-explorer && npm run start:worker
+# Update cache every 5 minutes
+*/5 * * * * cd /path/to/mintlayer-explorer && npm run start:worker
 ```
 
 ## 🔍 Troubleshooting
 
 ### Common Issues
 
-1. **Pool data not showing**
-   - Run `npm run start:worker` to populate the database
+1. **Cached explorer data not showing**
+   - Set `DATABASE_URL` or `POSTGRES_URL`
+   - Run `npm run start:worker` to populate PostgreSQL
    - Check network connectivity to Mintlayer API servers
 
-2. **Build errors with better-sqlite3**
-   - Ensure you have Python and build tools installed
-   - On Ubuntu/Debian: `sudo apt-get install python3 build-essential`
-   - On macOS: Install Xcode command line tools
+2. **PostgreSQL connection issues**
+   - Verify the database is reachable from the app container or host
+   - Confirm credentials in `DATABASE_URL`
 
 3. **WASM module issues**
    - The project includes pre-built WASM binaries
@@ -249,8 +276,8 @@ Set up a cron job to regularly update pool data:
 
 ### Performance Optimization
 
-- Pool data is cached in SQLite to reduce API calls
-- Consider implementing Redis for production caching
+- Critical explorer data is cached in PostgreSQL to reduce API calls
+- Consider adding a scheduler or queue for continuous cache refresh
 - Use CDN for static assets in production
 
 ## 🤝 Contributing

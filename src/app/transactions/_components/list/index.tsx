@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ColumnBox } from "@/app/(homepage)/_components/column_box";
 import transactionIcon from "@/app/(homepage)/_icons/24px/transactions.svg";
@@ -26,13 +26,19 @@ const mapToTransaction = ({ amount, block, fee, input, label, output, timestamp,
 
 const itemsPerPage = 10;
 
-export const List = () => {
-  const [transactions, setTransactions] = useState<any>([]);
+export const List = ({ initialTransactions }: { initialTransactions: any[] }) => {
+  const [transactions, setTransactions] = useState<any[]>(initialTransactions.map(mapToTransaction));
   const [loading, setLoading] = useState<boolean>(false);
-  const [offset, setOffset] = useState<any>(0);
+  const [offset, setOffset] = useState<number>(0);
+  const skipInitialFetch = useRef(initialTransactions.length > 0);
 
   useEffect(() => {
     const getData = async () => {
+      if (skipInitialFetch.current && offset === 0) {
+        skipInitialFetch.current = false;
+        return;
+      }
+
       setLoading(true);
       const res = await fetch("/api/transaction/last" + (offset ? "?offset=" + offset : ""), { cache: "no-store" });
       const data = await res.json();

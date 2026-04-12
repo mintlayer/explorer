@@ -1,47 +1,24 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Block } from "@/app/(homepage)/_components/block";
 
-export function Blocks() {
-  const [blocks, setBlocks] = useState<any>(null);
-  const [beforeBlocks, setBeforeBlocks] = useState<any>(null);
+export function Blocks({ initialBlocks }: { initialBlocks: any[] }) {
+  const [blocks, setBlocks] = useState<any[]>(initialBlocks);
+  const [beforeBlocks, setBeforeBlocks] = useState<number | null>(initialBlocks[initialBlocks.length - 1]?.block ? initialBlocks[initialBlocks.length - 1].block - 1 : null);
 
   const getBlocks = async () => {
     const res = await fetch("/api/block/last" + (beforeBlocks ? "?before=" + beforeBlocks : ""), { cache: "no-store" });
     const data = await res.json();
     setBlocks([...blocks, ...data]);
-    setBeforeBlocks(data[data.length - 1].block - 1);
-  };
-
-  useEffect(() => {
-    const getBlocks = async () => {
-      const res = await fetch("/api/block/last", { cache: "no-store" });
-      const data = await res.json();
-      setBlocks(data);
+    if (data.length > 0) {
       setBeforeBlocks(data[data.length - 1].block - 1);
-    };
-    getBlocks();
-  }, []);
+    }
+  };
 
   const maxTransactions = blocks?.reduce((max: number, block: any) => {
     return Math.max(max, block.transactions);
   }, 0);
-
-  if (!blocks)
-    return (
-      <>
-        <Block skeleton />
-        <Block skeleton />
-        <Block skeleton />
-        <Block skeleton />
-        <Block skeleton />
-        <Block skeleton />
-        <Block skeleton />
-        <Block skeleton />
-        <Block skeleton />
-      </>
-    );
 
   return (
     <>

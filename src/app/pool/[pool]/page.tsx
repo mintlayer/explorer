@@ -68,6 +68,7 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
 export default async function Pool({ params }: { params: { pool: string } }) {
   const pool = (await params).pool;
   const { data, data_delegations, instruction, guiInstruction }: any = await getData(pool);
+  const poolId = data?.pool ?? data?.pool_id ?? pool;
 
   const { error } = data;
 
@@ -88,7 +89,7 @@ export default async function Pool({ params }: { params: { pool: string } }) {
               <Link href="/pools" className="text-3xl md:text-5xl font-bold mt-4 md:mb-8 md:leading-[4rem] text-primary-100">
                 Pools
               </Link>
-              <div className="text-3xl md:text-5xl font-bold md:mt-4 mb-8 md:leading-[4rem]">/ {data.pool.slice(0, 6) + "..." + data.pool.slice(-6)}</div>
+              <div className="text-3xl md:text-5xl font-bold md:mt-4 mb-8 md:leading-[4rem]">/ {poolId.slice(0, 6) + "..." + poolId.slice(-6)}</div>
             </div>
             <div className="grid md:grid-cols-12 gap-4 mb-8">
               <div className="md:col-span-12 md:mr-20 relative">
@@ -103,11 +104,11 @@ export default async function Pool({ params }: { params: { pool: string } }) {
                   data={[
                     {
                       title: "Pool",
-                      value: data.pool,
+                      value: poolId,
                       icon: icon_hash,
                       iconTooltip: "Pool",
-                      qrCode: data.pool,
-                      copy: data.pool,
+                      qrCode: poolId,
+                      copy: poolId,
                     },
                     {
                       title: "VRF public key",
@@ -155,7 +156,7 @@ export default async function Pool({ params }: { params: { pool: string } }) {
             <Link href="/pools" className="text-3xl md:text-5xl font-bold mt-4 md:mb-8 md:leading-[4rem] text-primary-100">
               Pools
             </Link>
-            <div className="text-3xl md:text-5xl font-bold md:mt-4 mb-8 md:leading-[4rem]">/ {data.pool.slice(0, 6) + "..." + data.pool.slice(-6)}</div>
+            <div className="text-3xl md:text-5xl font-bold md:mt-4 mb-8 md:leading-[4rem]">/ {poolId.slice(0, 6) + "..." + poolId.slice(-6)}</div>
           </div>
           <div className="grid md:grid-cols-12 gap-4 mb-8">
             <div className="md:col-span-10 md:mr-20 relative">
@@ -171,11 +172,11 @@ export default async function Pool({ params }: { params: { pool: string } }) {
                   data={[
                     {
                       title: "Pool",
-                      value: data.pool,
+                      value: poolId,
                       icon: icon_hash,
                       iconTooltip: "Pool",
-                      qrCode: data.pool,
-                      copy: data.pool,
+                      qrCode: poolId,
+                      copy: poolId,
                     },
                     {
                       title: "VRF public key",
@@ -192,7 +193,7 @@ export default async function Pool({ params }: { params: { pool: string } }) {
                     },
                   ]}
                 />
-                <Stats pool_id={data.pool} />
+                <Stats pool_id={poolId} />
               </div>
             </div>
             <div className="md:col-span-2 grid grid-cols-1 grid-rows-3 gap-4 md:-ml-20">

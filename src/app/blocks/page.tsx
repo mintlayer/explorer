@@ -1,5 +1,6 @@
 import { Hero } from "@/app/_components/hero";
 import { List } from "./_components/list";
+import { getHomepageBlocks } from "@/lib/explorer-ssr";
 
 export default async function Block({
   params,
@@ -8,6 +9,8 @@ export default async function Block({
   params: { block: string };
   searchParams: { transactionsPage: string; transactionsPerPage: string };
 }) {
+  const initialBlocks = await getHomepageBlocks(10);
+
   return (
     <>
       <Hero>
@@ -24,7 +27,7 @@ export default async function Block({
       </Hero>
       <div>
         <div className="max-w-6xl md:mx-auto py-6 px-5">
-          <List />
+          <List initialBlocks={initialBlocks} />
         </div>
       </div>
     </>

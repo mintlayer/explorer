@@ -1,22 +1,27 @@
 import { NextResponse } from "next/server";
-
-import db from "@/lib/db";
+import { fetchAllPoolsFromApi } from "@/lib/explorer-source";
+import { getPoolsFromDb, savePoolsToDb } from "@/lib/explorer-store";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 120;
 
 export async function GET(request: Request) {
-  const row: any = db.prepare("SELECT * FROM pools WHERE id = 1").get();
+  const cachedPools = await getPoolsFromDb();
 
-  if(!row) {
-    return NextResponse.json([]);
+  if (cachedPools.length > 0) {
+    return NextResponse.json(cachedPools, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Accept",
+      },
+    });
   }
 
-  const pools = JSON.parse(row.result);
+  const pools = await fetchAllPoolsFromApi();
+  await savePoolsToDb(pools);
 
-  const response = pools;
-
-  return NextResponse.json(response, {
+  return NextResponse.json(pools, {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
