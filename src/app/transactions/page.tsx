@@ -2,6 +2,8 @@ import { Hero } from "@/app/_components/hero";
 import { List } from "./_components/list";
 import { getHomepageTransactions } from "@/lib/explorer-ssr";
 
+export const dynamic = "force-dynamic";
+
 export default async function Transactions({
   params,
   searchParams,

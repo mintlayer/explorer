@@ -2,6 +2,8 @@ import { Hero } from "@/app/_components/hero";
 import { List } from "./_components/list";
 import { getHomepageBlocks } from "@/lib/explorer-ssr";
 
+export const dynamic = "force-dynamic";
+
 export default async function Block({
   params,
   searchParams,

@@ -7,6 +7,8 @@ import { WalletConnect } from "@/app/_components/wallet_connect";
 import SaveToLocalStorage from "@/app/pools/_components/savetostorage";
 import { getPoolSummaryData, getPoolsListData } from "@/lib/explorer-ssr";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Mintlayer Staking Pools",
 };

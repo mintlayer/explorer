@@ -13,6 +13,8 @@ import block from "./_icons/24px/block.svg";
 import React from "react";
 import { getHomepageBlocks, getHomepageTransactions, getPoolSummaryData, getTransactionTotal } from "@/lib/explorer-ssr";
 
+export const dynamic = "force-dynamic";
+
 const menuLinks = [
   { label: "Transactions", href: "/transactions" },
   { label: "Blocks", href: "/blocks" },
