@@ -449,9 +449,12 @@ async function storeBlocks(blocks) {
 
 async function storePools(pools) {
   logStep(`Persisting ${pools.length} pools and delegations...`);
+  const syncedPoolIds = [];
+
   for (let index = 0; index < pools.length; index += 1) {
     const pool = pools[index];
     logStep(`Persisting pool ${index + 1}/${pools.length}: ${pool.poolId}`);
+    syncedPoolIds.push(pool.poolId);
     await pg.query(
       `
         INSERT INTO explorer_pools (pool_id, payload, updated_at)
@@ -476,6 +479,39 @@ async function storePools(pools) {
         [pool.poolId, delegation.delegation_id, JSON.stringify(delegation)],
       );
     }
+  }
+
+  if (syncedPoolIds.length > 0) {
+    logStep(`Pruning stale pools not present in the latest snapshot (${syncedPoolIds.length} active pool ids)`);
+    await pg.query(
+      `
+        DELETE FROM explorer_pool_delegations
+        WHERE pool_id NOT IN (
+          SELECT UNNEST($1::text[])
+        )
+      `,
+      [syncedPoolIds],
+    );
+
+    await pg.query(
+      `
+        DELETE FROM explorer_pool_daily_stats
+        WHERE pool_id NOT IN (
+          SELECT UNNEST($1::text[])
+        )
+      `,
+      [syncedPoolIds],
+    );
+
+    await pg.query(
+      `
+        DELETE FROM explorer_pools
+        WHERE pool_id NOT IN (
+          SELECT UNNEST($1::text[])
+        )
+      `,
+      [syncedPoolIds],
+    );
   }
 }
 

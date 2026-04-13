@@ -1,6 +1,7 @@
 import "server-only";
 
 import { isPostgresConfigured, postgres } from "@/lib/postgres";
+import { normalizePoolPayload } from "@/lib/pool-normalization";
 
 const RECENT_TRANSACTIONS_LIMIT = Number(process.env.EXPLORER_RECENT_TRANSACTIONS_LIMIT || 100);
 const RECENT_BLOCKS_LIMIT = Number(process.env.EXPLORER_RECENT_BLOCKS_LIMIT || 100);
@@ -244,7 +245,7 @@ export async function getPoolsFromDb() {
       `,
     );
 
-    return rows.map((row: any) => row.payload);
+    return rows.map((row: any) => normalizePoolPayload(row.payload));
   }, [] as any[]);
 }
 
@@ -260,11 +261,11 @@ export async function getPoolFromDb(poolId: string) {
       [poolId],
     );
 
-    return rows[0]?.payload ?? null;
+    return rows[0]?.payload ? normalizePoolPayload(rows[0].payload) : null;
   }, null as any);
 }
 
-export async function savePoolsToDb(pools: any[]) {
+export async function savePoolsToDb(pools: any[], options?: { pruneMissing?: boolean }) {
   return runWithDb(async () => {
     if (!pools.length) {
       return;
@@ -275,8 +276,16 @@ export async function savePoolsToDb(pools: any[]) {
     try {
       await client.query("BEGIN");
 
+      const syncedPoolIds: string[] = [];
+
       for (const pool of pools) {
-        const poolId = pool.pool_id || pool.pool;
+        const normalizedPool = normalizePoolPayload(pool);
+        const poolId = normalizedPool.pool_id || normalizedPool.pool;
+        if (!poolId) {
+          continue;
+        }
+
+        syncedPoolIds.push(poolId);
         await client.query(
           `
             INSERT INTO explorer_pools (pool_id, payload, updated_at)
@@ -286,7 +295,39 @@ export async function savePoolsToDb(pools: any[]) {
               payload = EXCLUDED.payload,
               updated_at = NOW()
           `,
-          [poolId, JSON.stringify(pool)],
+          [poolId, JSON.stringify(normalizedPool)],
+        );
+      }
+
+      if (options?.pruneMissing && syncedPoolIds.length > 0) {
+        await client.query(
+          `
+            DELETE FROM explorer_pool_delegations
+            WHERE pool_id NOT IN (
+              SELECT UNNEST($1::text[])
+            )
+          `,
+          [syncedPoolIds],
+        );
+
+        await client.query(
+          `
+            DELETE FROM explorer_pool_daily_stats
+            WHERE pool_id NOT IN (
+              SELECT UNNEST($1::text[])
+            )
+          `,
+          [syncedPoolIds],
+        );
+
+        await client.query(
+          `
+            DELETE FROM explorer_pools
+            WHERE pool_id NOT IN (
+              SELECT UNNEST($1::text[])
+            )
+          `,
+          [syncedPoolIds],
         );
       }
 

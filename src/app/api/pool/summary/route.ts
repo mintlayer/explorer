@@ -1,6 +1,7 @@
 import { get_annual_subsidy } from "@/utils/emission";
 import { fetchAllPoolsFromApi, fetchChainTip } from "@/lib/explorer-source";
 import { getLatestBlockHeightFromDb, getPoolsFromDb, savePoolsToDb } from "@/lib/explorer-store";
+import { sumPoolField } from "@/lib/pool-normalization";
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
@@ -10,24 +11,20 @@ export async function GET(request: Request) {
 
   if (!pools.length) {
     pools = await fetchAllPoolsFromApi();
-    await savePoolsToDb(pools);
+    await savePoolsToDb(pools, { pruneMissing: true });
   }
 
   const currentBlockHeight = (await getLatestBlockHeightFromDb()) ?? (await fetchChainTip()).block_height;
   const annual_subsidy = get_annual_subsidy(currentBlockHeight);
 
-  let pools_amount = 0;
-  let delegations_amount = 0;
-  let effective_pools_amount = 0;
-  let total_amount = 0;
+  const pools_amount = sumPoolField(pools, "staker_balance");
+  const delegations_amount = sumPoolField(pools, "delegations_amount");
+  const effective_pools_amount = sumPoolField(pools, "effective_pool_balance");
+  const total_amount = sumPoolField(pools, "balance");
   let delegation_count = 0;
 
   for (const pool of pools) {
-    pools_amount += parseFloat(pool.staker_balance);
-    delegations_amount += pool.delegations_amount;
-    delegation_count += pool.delegations_count;
-    effective_pools_amount += pool.effective_pool_balance;
-    total_amount += parseFloat(pool.balance);
+    delegation_count += Number.isFinite(pool.delegations_count) ? pool.delegations_count : 0;
   }
 
   const total_apy = total_amount > 0 ? ((annual_subsidy / total_amount) * 100).toFixed(2) : 0;

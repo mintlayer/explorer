@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   }
 
   const pools = await fetchAllPoolsFromApi();
-  await savePoolsToDb(pools);
+  await savePoolsToDb(pools, { pruneMissing: true });
 
   return NextResponse.json(pools, {
     headers: {

@@ -3,8 +3,8 @@ import { getCoin } from "@/utils/network";
 const coin = getCoin();
 
 export const FormatML = ({ value, fraction = 0 }: any) => {
-  const number = parseFloat(value);
-
+  const parsed = parseFloat(value);
+  const number = Number.isFinite(parsed) ? parsed : 0;
   const roundedNumber = Math.round(number * 100) / 100;
 
   const [integerPart, fractionalPart] = roundedNumber.toFixed(fraction).split(".");

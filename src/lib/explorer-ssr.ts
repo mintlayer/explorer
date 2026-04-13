@@ -12,6 +12,7 @@ import {
   saveRecentBlocksToDb,
   saveRecentTransactionsToDb,
 } from "@/lib/explorer-store";
+import { sumPoolField } from "@/lib/pool-normalization";
 
 const NODE_API_URL = getUrl();
 
@@ -42,24 +43,20 @@ export async function getPoolSummaryData() {
 
   if (!pools.length) {
     pools = await fetchAllPoolsFromApi();
-    await savePoolsToDb(pools);
+    await savePoolsToDb(pools, { pruneMissing: true });
   }
 
   const currentBlockHeight = (await getLatestBlockHeightFromDb()) ?? (await fetchChainTip()).block_height;
   const annualSubsidy = get_annual_subsidy(currentBlockHeight);
 
-  let poolsAmount = 0;
-  let delegationsAmount = 0;
-  let effectivePoolsAmount = 0;
-  let totalAmount = 0;
+  const poolsAmount = sumPoolField(pools, "staker_balance");
+  const delegationsAmount = sumPoolField(pools, "delegations_amount");
+  const effectivePoolsAmount = sumPoolField(pools, "effective_pool_balance");
+  const totalAmount = sumPoolField(pools, "balance");
   let delegationCount = 0;
 
   for (const pool of pools) {
-    poolsAmount += parseFloat(pool.staker_balance);
-    delegationsAmount += pool.delegations_amount;
-    delegationCount += pool.delegations_count;
-    effectivePoolsAmount += pool.effective_pool_balance;
-    totalAmount += parseFloat(pool.balance);
+    delegationCount += Number.isFinite(pool.delegations_count) ? pool.delegations_count : 0;
   }
 
   return {
@@ -91,7 +88,7 @@ export async function getPoolsListData() {
 
   if (!pools.length) {
     pools = await fetchAllPoolsFromApi();
-    await savePoolsToDb(pools);
+    await savePoolsToDb(pools, { pruneMissing: true });
   }
 
   const blocks = await getHomepageBlocks(1);

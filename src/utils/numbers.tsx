@@ -1,8 +1,12 @@
 export const formatML = (value: string, fraction = 2) => {
   const number = parseFloat(value);
 
+  if (!Number.isFinite(number)) {
+    return "0";
+  }
+
   if (number < 1000) {
-    return value;
+    return number.toString();
   }
 
   const roundedNumber = Math.round(number * 100) / 100;
