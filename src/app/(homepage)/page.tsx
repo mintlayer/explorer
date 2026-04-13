@@ -36,8 +36,9 @@ export default async function Home() {
     <>
       <div className="w-full bg-secondary-100">
         <div className="absolute w-full bottom-0 overflow-hidden top-0 h-[350px]">
-          <div className="absolute top-[-504px] left-[534px] w-[834px] h-[834px] rounded-[100%] blur-[100px] bg-white opacity-50"></div>
-          <div className="absolute top-[-334px] left-[-300px] w-[834px] h-[834px] rounded-[100%] blur-[100px] bg-primary-100 opacity-50"></div>
+          <div className="hidden md:block absolute top-[-504px] left-[534px] w-[834px] h-[834px] rounded-[100%] blur-[100px] bg-white opacity-50"></div>
+          <div className="hidden md:block absolute top-[-334px] left-[-300px] w-[834px] h-[834px] rounded-[100%] blur-[100px] bg-primary-100 opacity-50"></div>
+          <div className="absolute inset-0 md:hidden bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.55),transparent_40%),radial-gradient(circle_at_top_left,rgba(17,150,127,0.18),transparent_45%)]"></div>
         </div>
 
         <div className="w-full max-w-[1016px] px-5 md:mx-auto">

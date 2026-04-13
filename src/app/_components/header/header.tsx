@@ -138,8 +138,9 @@ export const Header = () => {
 
         {isHome ? (
           <div className="absolute -z-50 w-full bottom-0 overflow-hidden top-0 h-[72px]">
-            <div className="absolute top-[-504px] left-[534px] w-[834px] h-[834px] rounded-[100%] blur-[100px] bg-white opacity-50"></div>
-            <div className="absolute top-[-334px] left-[-300px] w-[834px] h-[834px] rounded-[100%] blur-[100px] bg-primary-100 opacity-50"></div>
+            <div className="hidden md:block absolute top-[-504px] left-[534px] w-[834px] h-[834px] rounded-[100%] blur-[100px] bg-white opacity-50"></div>
+            <div className="hidden md:block absolute top-[-334px] left-[-300px] w-[834px] h-[834px] rounded-[100%] blur-[100px] bg-primary-100 opacity-50"></div>
+            <div className="absolute inset-0 md:hidden bg-gradient-to-r from-primary-100/8 via-white/35 to-transparent"></div>
           </div>
         ) : (
           <></>
@@ -147,7 +148,16 @@ export const Header = () => {
 
         <div className="flex flex-wrap justify-between items-center gap-3 md:gap-12 max-w-6xl mx-auto px-5 pt-3 pb-2 md:pb-3">
           <Link href={"/"} className="order-1 flex items-center w-8 md:w-auto overflow-hidden">
-            <Image src={logo} className="w-[149px] h-[30px] max-w-none mr-1" alt="" />
+            <img
+              src={logo.src}
+              className="w-[149px] h-[30px] max-w-none mr-1"
+              width="149"
+              height="30"
+              alt="Mintlayer"
+              loading="eager"
+              fetchPriority="high"
+              decoding="sync"
+            />
             <span className="ml-1 mt-1 hidden md:block uppercase text-base-dark text-xs tracking-widest"> - explorer</span>
           </Link>
 
