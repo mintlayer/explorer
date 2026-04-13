@@ -33,6 +33,14 @@ async function fetchJson(url: string, init?: RequestInit) {
   return response.json();
 }
 
+async function fetchTokenById(tokenId: string) {
+  try {
+    return await fetchJson(`${NODE_API_URL}/token/${tokenId}`);
+  } catch (_error) {
+    return null;
+  }
+}
+
 export async function fetchChainTip() {
   return fetchJson(`${NODE_API_URL}/chain/tip`, { cache: "no-store" });
 }
@@ -280,11 +288,11 @@ export async function fetchTokensFromApi() {
   });
 
   const ids = Array.from(new Set<string>(batch.results.flat()));
-  const tokenData = await Promise.all(ids.map((tokenId: string) => fetchJson(`${NODE_API_URL}/token/${tokenId}`)));
+  const tokenData = await Promise.all(ids.map((tokenId: string) => fetchTokenById(tokenId)));
 
   const metadata = await Promise.all(
     tokenData.map(async (token: any) => {
-      if (token.error) {
+      if (!token || token.error) {
         return null;
       }
 
@@ -305,7 +313,7 @@ export async function fetchTokensFromApi() {
   return ids
     .map((tokenId: string, index: number) => {
       const token = tokenData[index];
-      if (token.error) {
+      if (!token || token.error) {
         return null;
       }
 
@@ -344,12 +352,12 @@ export async function fetchNftsFromApi() {
   }
 
   const ids = Array.from(new Set<string>(tokenIds));
-  const tokenData = await Promise.all(ids.map((tokenId: string) => fetchJson(`${NODE_API_URL}/token/${tokenId}`)));
+  const tokenData = await Promise.all(ids.map((tokenId: string) => fetchTokenById(tokenId)));
 
   return ids
     .map((tokenId: string, index: number) => {
       const token = tokenData[index];
-      if (token.error) {
+      if (!token || token.error) {
         return null;
       }
 

@@ -46,6 +46,14 @@ async function fetchJson(url, init = {}) {
   return response.json();
 }
 
+async function fetchTokenById(tokenId) {
+  try {
+    return await fetchJson(`${NODE_API_URL}/token/${tokenId}`);
+  } catch (_error) {
+    return null;
+  }
+}
+
 async function ensureSchema() {
   await pg.query(`
     CREATE TABLE IF NOT EXISTS explorer_recent_transactions (
@@ -269,8 +277,8 @@ async function fetchTokens() {
   const result = [];
 
   for (const tokenId of ids) {
-    const token = await fetchJson(`${NODE_API_URL}/token/${tokenId}`);
-    if (token.error) {
+    const token = await fetchTokenById(tokenId);
+    if (!token || token.error) {
       continue;
     }
 
@@ -324,8 +332,8 @@ async function fetchNfts() {
   const result = [];
 
   for (const tokenId of ids) {
-    const token = await fetchJson(`${NODE_API_URL}/token/${tokenId}`);
-    if (token.error) {
+    const token = await fetchTokenById(tokenId);
+    if (!token || token.error) {
       continue;
     }
 
