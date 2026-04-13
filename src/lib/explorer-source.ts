@@ -41,6 +41,14 @@ async function fetchTokenById(tokenId: string) {
   }
 }
 
+async function fetchNftById(tokenId: string) {
+  try {
+    return await fetchJson(`${NODE_API_URL}/nft/${tokenId}`);
+  } catch (_error) {
+    return null;
+  }
+}
+
 export async function fetchChainTip() {
   return fetchJson(`${NODE_API_URL}/chain/tip`, { cache: "no-store" });
 }
@@ -352,7 +360,7 @@ export async function fetchNftsFromApi() {
   }
 
   const ids = Array.from(new Set<string>(tokenIds));
-  const tokenData = await Promise.all(ids.map((tokenId: string) => fetchTokenById(tokenId)));
+  const tokenData = await Promise.all(ids.map((tokenId: string) => fetchNftById(tokenId)));
 
   return ids
     .map((tokenId: string, index: number) => {
@@ -361,18 +369,21 @@ export async function fetchNftsFromApi() {
         return null;
       }
 
+      const ticker = token.ticker?.string;
+      if (!ticker) {
+        return null;
+      }
+
       return {
         id: tokenId,
-        frozen: token.frozen,
-        is_locked: token.is_locked,
-        is_token_freezable: token.is_token_freezable,
-        is_token_unfreezable: token.is_token_unfreezable,
-        token_ticker: token.token_ticker.string,
-        total_supply:
-          typeof token.total_supply === "string"
-            ? token.total_supply
-            : token.total_supply.Fixed.atoms / token.number_of_decimals,
-        circulating_supply: token.circulating_supply.decimal,
+        ticker,
+        name: token.name?.string || null,
+        description: token.description?.string || null,
+        creator: token.creator || null,
+        owner: token.owner || null,
+        media_uri: token.media_uri?.string || null,
+        icon_uri: token.icon_uri?.string || null,
+        additional_metadata_uri: token.additional_metadata_uri?.string || null,
       };
     })
     .filter(Boolean);

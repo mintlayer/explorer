@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Search } from "@/app/_components/search";
+import { ProtectedEmailLink } from "@/app/_components/protected_email_link";
 import { ColumnBox } from "@/app/(homepage)/_components/column_box";
 
 import { Blocks } from "@/app/(homepage)/_components/blocks";
@@ -49,9 +50,11 @@ export default async function Home() {
               <Summary data={poolSummaryData} data_transaction={transactionTotal} />
               <div className="col-span-2 bg-white text-center text-xs py-1.5 px-3">
                 Do you have any data to suggest?{" "}
-                <a href="mailto:support@mintlayer.org" className="text-primary-100 underline">
-                  Contact us
-                </a>
+                <ProtectedEmailLink
+                  encoded={[115, 117, 112, 112, 111, 114, 116, 64, 109, 105, 110, 116, 108, 97, 121, 101, 114, 46, 111, 114, 103]}
+                  label="Contact us"
+                  className="text-primary-100 underline"
+                />
               </div>
             </div>
           </div>

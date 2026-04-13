@@ -26,6 +26,14 @@ const pg = new Pool({
   max: Number(process.env.POSTGRES_POOL_SIZE || 10),
 });
 
+function logStep(message) {
+  console.log(`[catalog ${new Date().toISOString()}] ${message}`);
+}
+
+function logWarning(message) {
+  console.warn(`[catalog ${new Date().toISOString()}] WARNING: ${message}`);
+}
+
 async function closePg() {
   await pg.end();
 }
@@ -49,6 +57,14 @@ async function fetchJson(url, init = {}) {
 async function fetchTokenById(tokenId) {
   try {
     return await fetchJson(`${NODE_API_URL}/token/${tokenId}`);
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function fetchNftById(tokenId) {
+  try {
+    return await fetchJson(`${NODE_API_URL}/nft/${tokenId}`);
   } catch (_error) {
     return null;
   }
@@ -211,14 +227,17 @@ function enrichPool(pool, delegations) {
 }
 
 async function fetchPools() {
+  logStep("Fetching pool index...");
   const seenPools = new Set();
   const pools = [];
   let offset = 0;
 
   while (true) {
+    logStep(`Requesting pool page at offset ${offset}`);
     const page = await fetchJson(`${NODE_API_URL}/pool?offset=${offset}`);
 
     if (!page.length) {
+      logStep(`Pool pagination completed at offset ${offset}`);
       break;
     }
 
@@ -232,8 +251,11 @@ async function fetchPools() {
     offset += 10;
   }
 
+  logStep(`Collected ${pools.length} unique pools, fetching delegations...`);
   const result = [];
-  for (const pool of pools) {
+  for (let index = 0; index < pools.length; index += 1) {
+    const pool = pools[index];
+    logStep(`Fetching delegations for pool ${index + 1}/${pools.length}: ${pool.pool_id}`);
     const delegations = await fetchPoolDelegations(pool.pool_id);
     result.push({
       poolId: pool.pool_id,
@@ -245,22 +267,8 @@ async function fetchPools() {
   return result;
 }
 
-async function fetchPoolStats(poolId) {
-  const currentTime = Math.floor(Date.now() / 1000);
-  const stats = {};
-
-  for (let index = 0; index < 30; index += 1) {
-    const dayEnd = currentTime - index * 86400;
-    const dayStart = dayEnd - 86400;
-    stats[new Date(dayStart * 1000).toISOString().split("T")[0]] = await fetchJson(
-      `${NODE_API_URL}/pool/${poolId}/block-stats?from=${dayStart}&to=${dayEnd}`,
-    );
-  }
-
-  return stats;
-}
-
 async function fetchTokens() {
+  logStep("Fetching token catalog...");
   const networkName = isMainNetwork ? "mainnet" : "testnet";
   const networkId = isMainNetwork ? 0 : 1;
 
@@ -274,9 +282,14 @@ async function fetchTokens() {
   });
 
   const ids = Array.from(new Set(batch.results.flat()));
+  logStep(`Collected ${ids.length} token ids from batch API`);
   const result = [];
 
-  for (const tokenId of ids) {
+  for (let index = 0; index < ids.length; index += 1) {
+    const tokenId = ids[index];
+    if (index === 0 || (index + 1) % 25 === 0 || index === ids.length - 1) {
+      logStep(`Fetching token details ${index + 1}/${ids.length}`);
+    }
     const token = await fetchTokenById(tokenId);
     if (!token || token.error) {
       continue;
@@ -314,14 +327,17 @@ async function fetchTokens() {
 }
 
 async function fetchNfts() {
+  logStep("Fetching NFT index...");
   const tokenIds = [];
   let offset = 0;
 
   while (true) {
+    logStep(`Requesting NFT source page at token offset ${offset}`);
     const page = await fetchJson(`${NODE_API_URL}/token?offset=${offset}`);
     tokenIds.push(...page);
 
     if (page.length < 10) {
+      logStep(`NFT source pagination completed at offset ${offset}`);
       break;
     }
 
@@ -329,30 +345,46 @@ async function fetchNfts() {
   }
 
   const ids = Array.from(new Set(tokenIds));
+  logStep(`Collected ${ids.length} candidate NFT ids`);
   const result = [];
 
-  for (const tokenId of ids) {
-    const token = await fetchTokenById(tokenId);
+  for (let index = 0; index < ids.length; index += 1) {
+    const tokenId = ids[index];
+    if (index === 0 || (index + 1) % 25 === 0 || index === ids.length - 1) {
+      logStep(`Fetching NFT details ${index + 1}/${ids.length}`);
+    }
+    const token = await fetchNftById(tokenId);
     if (!token || token.error) {
       continue;
     }
 
-    result.push({
-      id: tokenId,
-      frozen: token.frozen,
-      is_locked: token.is_locked,
-      is_token_freezable: token.is_token_freezable,
-      is_token_unfreezable: token.is_token_unfreezable,
-      token_ticker: token.token_ticker.string,
-      total_supply: typeof token.total_supply === "string" ? token.total_supply : token.total_supply.Fixed.atoms / token.number_of_decimals,
-      circulating_supply: token.circulating_supply.decimal,
-    });
+    try {
+      const ticker = token.ticker?.string;
+      if (!ticker) {
+        throw new Error("Missing ticker.string");
+      }
+
+      result.push({
+        id: tokenId,
+        ticker,
+        name: token.name?.string || null,
+        description: token.description?.string || null,
+        creator: token.creator || null,
+        owner: token.owner || null,
+        media_uri: token.media_uri?.string || null,
+        icon_uri: token.icon_uri?.string || null,
+        additional_metadata_uri: token.additional_metadata_uri?.string || null,
+      });
+    } catch (error) {
+      logWarning(`Skipping malformed NFT ${tokenId}: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   return result;
 }
 
 async function storeTransactions(transactions) {
+  logStep(`Persisting ${transactions.length} recent transactions...`);
   for (const transaction of transactions) {
     await pg.query(
       `
@@ -384,6 +416,7 @@ async function storeTransactions(transactions) {
 }
 
 async function storeBlocks(blocks) {
+  logStep(`Persisting ${blocks.length} recent blocks...`);
   for (const block of blocks) {
     await pg.query(
       `
@@ -415,7 +448,10 @@ async function storeBlocks(blocks) {
 }
 
 async function storePools(pools) {
-  for (const pool of pools) {
+  logStep(`Persisting ${pools.length} pools and delegations...`);
+  for (let index = 0; index < pools.length; index += 1) {
+    const pool = pools[index];
+    logStep(`Persisting pool ${index + 1}/${pools.length}: ${pool.poolId}`);
     await pg.query(
       `
         INSERT INTO explorer_pools (pool_id, payload, updated_at)
@@ -430,6 +466,7 @@ async function storePools(pools) {
 
     await pg.query("DELETE FROM explorer_pool_delegations WHERE pool_id = $1", [pool.poolId]);
 
+    logStep(`Writing ${pool.delegations.length} delegations for pool ${pool.poolId}`);
     for (const delegation of pool.delegations) {
       await pg.query(
         `
@@ -439,26 +476,16 @@ async function storePools(pools) {
         [pool.poolId, delegation.delegation_id, JSON.stringify(delegation)],
       );
     }
-
-    const stats = await fetchPoolStats(pool.poolId);
-    for (const [date, payload] of Object.entries(stats)) {
-      await pg.query(
-        `
-          INSERT INTO explorer_pool_daily_stats (pool_id, stat_date, payload, updated_at)
-          VALUES ($1, $2::date, $3::jsonb, NOW())
-          ON CONFLICT (pool_id, stat_date)
-          DO UPDATE SET
-            payload = EXCLUDED.payload,
-            updated_at = NOW()
-        `,
-        [pool.poolId, date, JSON.stringify(payload)],
-      );
-    }
   }
 }
 
 async function storeTokens(tokens) {
-  for (const token of tokens) {
+  logStep(`Persisting ${tokens.length} tokens...`);
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (index === 0 || (index + 1) % 25 === 0 || index === tokens.length - 1) {
+      logStep(`Persisting token ${index + 1}/${tokens.length}`);
+    }
     await pg.query(
       `
         INSERT INTO explorer_tokens (token_id, payload, updated_at)
@@ -474,7 +501,12 @@ async function storeTokens(tokens) {
 }
 
 async function storeNfts(nfts) {
-  for (const nft of nfts) {
+  logStep(`Persisting ${nfts.length} NFTs...`);
+  for (let index = 0; index < nfts.length; index += 1) {
+    const nft = nfts[index];
+    if (index === 0 || (index + 1) % 25 === 0 || index === nfts.length - 1) {
+      logStep(`Persisting NFT ${index + 1}/${nfts.length}`);
+    }
     await pg.query(
       `
         INSERT INTO explorer_nfts (nft_id, payload, updated_at)
@@ -490,28 +522,30 @@ async function storeNfts(nfts) {
 }
 
 async function syncRecentChainData() {
-  console.log("Preparing PostgreSQL schema...");
+  logStep("Preparing PostgreSQL schema...");
   await ensureSchema();
 
-  console.log("Syncing latest transactions...");
+  logStep("Syncing latest transactions...");
   await storeTransactions(await fetchRecentTransactions());
 
-  console.log("Syncing latest blocks...");
+  logStep("Syncing latest blocks...");
   await storeBlocks(await fetchRecentBlocks());
 }
 
 async function syncCatalogData() {
-  console.log("Preparing PostgreSQL schema...");
+  logStep("Preparing PostgreSQL schema...");
   await ensureSchema();
 
-  console.log("Syncing pools and pool statistics...");
+  logStep("Syncing pools and delegations...");
   await storePools(await fetchPools());
 
-  console.log("Syncing tokens...");
+  logStep("Syncing tokens...");
   await storeTokens(await fetchTokens());
 
-  console.log("Syncing NFT index...");
+  logStep("Syncing NFT index...");
   await storeNfts(await fetchNfts());
+
+  logStep("Catalog sync finished");
 }
 
 module.exports = {
