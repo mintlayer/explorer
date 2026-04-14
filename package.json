@@ -15,7 +15,7 @@
     "sync:catalog": "node ./workers/pools.js"
   },
   "dependencies": {
-    "@mintlayer/sdk": "^1.0.21",
+    "@mintlayer/sdk": "^1.0.30",
     "@types/node": "20.5.7",
     "@types/react": "18.2.21",
     "@types/react-dom": "18.2.7",

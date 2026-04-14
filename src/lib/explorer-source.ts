@@ -1,8 +1,10 @@
 import "server-only";
 
-import { Amount, effective_pool_balance, Network } from "@/utils/mintlayer-crypto/pkg";
+import { Amount, decode_signed_transaction_to_js, effective_pool_balance, get_transaction_id, Network } from "@/utils/mintlayer-crypto/pkg";
 import { getNetwork, getUrl, getUrlSide } from "@/utils/network";
 import { formatML } from "@/utils/numbers";
+import { parseDecodedTx } from "@/app/api/transaction/decode/utils";
+import { shortenString } from "@/utils/format";
 
 const NODE_API_URL = getUrl();
 const NODE_SIDE_API_URL = getUrlSide();
@@ -31,6 +33,65 @@ async function fetchJson(url: string, init?: RequestInit) {
   }
 
   return response.json();
+}
+
+function hexToUint8Array(hex: string): Uint8Array {
+  const cleanHex = hex.replace(/^0x/, "");
+
+  if (!/^[0-9a-fA-F]*$/.test(cleanHex)) {
+    throw new Error("Invalid hex string");
+  }
+
+  if (cleanHex.length % 2 !== 0) {
+    throw new Error("Hex string must have even length");
+  }
+
+  return new Uint8Array(cleanHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
+}
+
+function atomsToDecimalCoin(atoms: string): string {
+  const atomsBigInt = BigInt(atoms);
+  const divisor = BigInt("100000000000");
+  const wholePart = atomsBigInt / divisor;
+  const fractionalPart = atomsBigInt % divisor;
+  const fractionalStr = fractionalPart.toString().padStart(11, "0");
+  const trimmedFractional = fractionalStr.replace(/0+$/, "");
+
+  if (!trimmedFractional) {
+    return wholePart.toString();
+  }
+
+  return `${wholePart}.${trimmedFractional}`;
+}
+
+function getDecodedAmount(outputs: any[]) {
+  return outputs.reduce((acc: bigint, output: any) => {
+    if (output?.type === "Transfer" && output?.value?.amount?.atoms) {
+      return BigInt(output.value.amount.atoms) + acc;
+    }
+
+    if (output?.type === "DelegateStaking" && output?.amount?.atoms) {
+      return BigInt(output.amount.atoms) + acc;
+    }
+
+    if (output?.type === "LockThenTransfer" && output?.value?.amount?.atoms) {
+      return BigInt(output.value.amount.atoms) + acc;
+    }
+
+    if (output?.type === "CreateStakePool" && output?.data?.amount?.atoms) {
+      return BigInt(output.data.amount.atoms) + acc;
+    }
+
+    return acc;
+  }, BigInt(0));
+}
+
+function getMojitoNetworkPath() {
+  return getNetwork() === "mainnet" ? "mainnet" : "testnet";
+}
+
+function getDecoderNetwork() {
+  return getNetwork() === "mainnet" ? Network.Mainnet : Network.Testnet;
 }
 
 async function fetchTokenById(tokenId: string) {
@@ -132,6 +193,49 @@ export async function fetchRecentTransactionsFromApi(offset = 0) {
       amount: formatML((Number(amount) / 1e11).toString()),
     };
   });
+}
+
+export async function fetchMempoolTransactionsFromApi(limit = 10) {
+  try {
+    const mojitoNetwork = getMojitoNetworkPath();
+    const decoderNetwork = getDecoderNetwork();
+    const chainTip = await fetchChainTip();
+    const nextBlock = chainTip.block_height + 1;
+    const data = await fetchJson(`https://mojito-api.mintlayer.org/${mojitoNetwork}/mempool/transactions`, {
+      cache: "no-store",
+    });
+
+    const transactions = Array.isArray(data?.transactions) ? data.transactions : [];
+
+    return transactions.slice(0, limit).flatMap((hex: string) => {
+      try {
+        const transactionBytes = hexToUint8Array(hex);
+        const decoded = decode_signed_transaction_to_js(transactionBytes, decoderNetwork);
+        const parsedTx = parseDecodedTx(decoded);
+        const amountAtoms = getDecodedAmount(parsedTx.outputs || []);
+        const feeAtoms = (transactionBytes.length * 100000000).toString();
+        const transactionId = get_transaction_id(transactionBytes, false);
+
+        return [{
+          transaction: transactionId,
+          label: shortenString(transactionId, 5, 5),
+          input: parsedTx.inputs?.length || 0,
+          output: parsedTx.outputs?.length || 0,
+          amount: formatML((Number(amountAtoms) / 1e11).toString()),
+          fee: atomsToDecimalCoin(feeAtoms),
+          timestamp: data.timestamp,
+          pendingBlock: nextBlock,
+          isPending: true,
+        }];
+      } catch (error) {
+        console.warn("Failed to decode mempool transaction", error);
+        return [];
+      }
+    });
+  } catch (error) {
+    console.warn("Failed to fetch mempool transactions", error);
+    return [];
+  }
 }
 
 export async function fetchPoolDelegationsFromApi(poolId: string) {

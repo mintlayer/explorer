@@ -15,10 +15,11 @@ import icon_arrow from "../../_icons/16px/arrow.svg";
 
 import styles from "./styles.module.css";
 import { Copy } from "@/app/tx/[tx]/_components/copy";
+import {formatML} from "@/utils/numbers";
 
 const coin = getCoin();
 
-export const Transaction = ({ transaction, amount, fee, block, timestamp, input, output, label, skeleton }: any) => {
+export const Transaction = ({ transaction, amount, fee, block, pendingBlock, isPending, timestamp, input, output, label, skeleton }: any) => {
   if (skeleton)
     return (
       <div className="bg-white pb-5 pt-6 px-6 grid grid-cols-2 gap-2 border-b-2 border-secondary-100 md:px-0 animate-pulse">
@@ -53,19 +54,27 @@ export const Transaction = ({ transaction, amount, fee, block, timestamp, input,
     <div className="bg-white pb-5 pt-6 px-6 grid grid-cols-2 gap-2 border-b-2 border-secondary-100 md:px-0">
       <div className="flex flex-row items-center text-xs">
         <Image className="w-4 h-4 mr-2" src={i_transactions} alt="" data-tooltip-id="tooltip" data-tooltip-content="Transaction ID" />{" "}
-        <Link className="font-bold text-base text-primary-110" href={`/tx/${transaction}`}>
-          {label}
-        </Link>{" "}
+        {isPending ? (
+          <span className="font-bold text-base text-primary-110">{label}</span>
+        ) : (
+          <Link className="font-bold text-base text-primary-110" href={`/tx/${transaction}`}>
+            {label}
+          </Link>
+        )}{" "}
         <Copy text={transaction} />
       </div>
       <div className="flex flex-row items-center text-xs">
         <Image className="w-4 h-4 mr-2" src={i_block} alt="" data-tooltip-id="tooltip" data-tooltip-content="Block height" />{" "}
-        <Link className="font-bold text-base text-primary-110" href={`/block/${block}`}>
-          #{block}
-        </Link>
+        {isPending ? (
+          <span className="font-bold text-base text-primary-110">~#{pendingBlock}</span>
+        ) : (
+          <Link className="font-bold text-base text-primary-110" href={`/block/${block}`}>
+            #{block}
+          </Link>
+        )}
       </div>
       <div className="flex flex-row items-center text-xs">
-        <Image className="w-4 h-4 mr-2" src={i_coin} alt="" data-tooltip-id="tooltip" data-tooltip-content="Transfer amount" /> {amount} {coin}
+        <Image className="w-4 h-4 mr-2" src={i_coin} alt="" data-tooltip-id="tooltip" data-tooltip-content="Transfer amount" /> {(amount)} {coin}
       </div>
       <div className="flex flex-row items-center text-xs">
         <Image className="w-4 h-4 mr-2" src={i_time} alt="" data-tooltip-id="tooltip" data-tooltip-content="Transaction date and time" />{" "}

@@ -12,7 +12,7 @@ import { Summary } from "@/app/(homepage)/_components/summary";
 import transactions from "./_icons/24px/transactions.svg";
 import block from "./_icons/24px/block.svg";
 import React from "react";
-import { getHomepageBlocks, getHomepageTransactions, getPoolSummaryData, getTransactionTotal } from "@/lib/explorer-ssr";
+import { getHomepageBlocks, getHomepageMempoolTransactions, getHomepageTransactions, getPoolSummaryData, getTransactionTotal } from "@/lib/explorer-ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -25,8 +25,9 @@ const menuLinks = [
 ];
 
 export default async function Home() {
-  const [transactionsData, blocksData, poolSummaryData, transactionTotal] = await Promise.all([
+  const [transactionsData, mempoolTransactionsData, blocksData, poolSummaryData, transactionTotal] = await Promise.all([
     getHomepageTransactions(10),
+    getHomepageMempoolTransactions(10),
     getHomepageBlocks(10),
     getPoolSummaryData(),
     getTransactionTotal(),
@@ -81,7 +82,7 @@ export default async function Home() {
           <div className="relative grid md:grid-cols-12 gap-6 mb-5 mt-4 md:mt-8 -mx-6 md:mx-0">
             <div className="md:col-span-7 col-span-1">
               <ColumnBox title="Latest Transactions" icon={<Image src={transactions} alt="" />}>
-                <Transactions initialTransactions={transactionsData} />
+                <Transactions initialTransactions={transactionsData} initialMempoolTransactions={mempoolTransactionsData} />
               </ColumnBox>
             </div>
             <div className="md:col-span-5 col-span-1">

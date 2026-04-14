@@ -2,7 +2,7 @@ import "server-only";
 
 import { get_annual_subsidy } from "@/utils/emission";
 import { getUrl } from "@/utils/network";
-import { fetchAllPoolsFromApi, fetchChainTip, fetchRecentBlocksFromApi, fetchRecentTransactionsFromApi } from "@/lib/explorer-source";
+import { fetchAllPoolsFromApi, fetchChainTip, fetchMempoolTransactionsFromApi, fetchRecentBlocksFromApi, fetchRecentTransactionsFromApi } from "@/lib/explorer-source";
 import {
   getLatestBlockHeightFromDb,
   getPoolsFromDb,
@@ -36,6 +36,10 @@ export async function getHomepageBlocks(limit = 10) {
   const blocks = await fetchRecentBlocksFromApi(null, limit);
   await saveRecentBlocksToDb(blocks);
   return blocks;
+}
+
+export async function getHomepageMempoolTransactions(limit = 10) {
+  return fetchMempoolTransactionsFromApi(limit);
 }
 
 export async function getPoolSummaryData() {

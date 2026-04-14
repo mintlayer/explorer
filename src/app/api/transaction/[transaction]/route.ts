@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { getUrl, getUrlSide } from "@/utils/network";
+import { getNetwork, getUrl, getUrlSide } from "@/utils/network";
 
 const NODE_API_URL = getUrl();
 
 const NODE_SIDE_API_URL = getUrlSide();
+const MOJITO_MEMPOOL_API_URL = `https://mojito-api.mintlayer.org/${getNetwork() === "mainnet" ? "mainnet" : "testnet"}/mempool/api`;
 
 export const dynamic = "force-dynamic";
 
 type TransactionResponse = {
+  id?: string;
   hash?: string;
   fee?: string;
   block?: string;
@@ -19,7 +21,82 @@ type TransactionResponse = {
   version_byte?: number;
   block_height?: number;
   used_tokens?: string[];
+  status?: string;
 };
+
+function collectUsedTokens(outputs: any[] = []) {
+  const usedTokens: Set<string> = new Set();
+
+  for (const value of outputs) {
+    if (value?.value?.token_id) {
+      usedTokens.add(value.value.token_id);
+    }
+  }
+
+  return Array.from(usedTokens);
+}
+
+function calculateAmount(outputs: any[] = []) {
+  return outputs.reduce((acc: number, value: any) => {
+    if (value?.type === "Transfer") {
+      return parseFloat(value?.value?.amount?.decimal || "0") + acc;
+    }
+    if (value?.type === "DelegateStaking") {
+      return parseFloat(value?.amount?.decimal || "0") + acc;
+    }
+    if (value?.type === "LockThenTransfer") {
+      return parseFloat(value?.value?.amount?.decimal || "0") + acc;
+    }
+    if (value?.type === "CreateStakePool") {
+      return parseFloat(value?.data?.amount?.decimal || "0") + acc;
+    }
+    return acc;
+  }, 0);
+}
+
+function normalizeMempoolTransaction(data: any, transactionId: string, nextBlockHeight: number): TransactionResponse | null {
+  if (!data || data.error) {
+    return null;
+  }
+
+  const outputs = data.outputs || [];
+  const inputs = data.inputs || [];
+
+  return {
+    id: data.id || transactionId,
+    hash: data.hash || data.id || transactionId,
+    confirmations: 0,
+    used_tokens: collectUsedTokens(outputs),
+    inputs,
+    outputs,
+    block_height: Number(data.block_height || nextBlockHeight),
+    version_byte: data.version_byte || 1,
+    fee: data?.fee?.decimal || data?.fee || "0",
+    amount: typeof data.amount === "number" ? data.amount : calculateAmount(outputs),
+    timestamp: data.timestamp || "",
+    status: data.status || "accepted",
+  };
+}
+
+async function getMempoolTransaction(transactionId: string) {
+  try {
+    const res = await fetch(`${MOJITO_MEMPOOL_API_URL}/transaction/${transactionId}`, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json();
+    return data?.error ? null : data;
+  } catch (_error) {
+    return null;
+  }
+}
 
 /**
  * Augment outputs with spent status by checking each output's spent status
@@ -78,15 +155,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ tran
 
   const data = await getTransaction(NODE_API_URL);
 
-  if (data.confirmations === 0) {
-    // get block height
+  const getNextBlockHeight = async () => {
     const chain_tip = await fetch(NODE_API_URL + "/chain/tip", {
       headers: {
         "Content-Type": "application/json",
       },
     });
     const chain_tip_data = await chain_tip.json();
-    const { block_height } = chain_tip_data;
+    return Number(chain_tip_data.block_height) + 1;
+  };
+
+  if (data.confirmations === 0) {
+    const block_height = await getNextBlockHeight();
 
     // fill utxo with data. There is an issue, utxo is not known but we have source_id and index, need to fetch that and augment to input.utxo
     const inputs = data.inputs.map(async ({ input }: any) => {
@@ -131,7 +211,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tran
       used_tokens: [],
       inputs: data.inputs || [],
       outputs: augmentedOutputs,
-      block_height: parseInt(block_height) + 1,
+      block_height,
       version_byte: 1,
       fee: data.fee.decimal, // half of hex length in kb
       amount: 0,
@@ -143,6 +223,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ tran
   }
 
   if (data.error) {
+    const mempoolData = await getMempoolTransaction(transaction_id);
+
+    if (mempoolData) {
+      const nextBlockHeight = await getNextBlockHeight();
+      const normalizedMempoolData = normalizeMempoolTransaction(mempoolData, transaction_id, nextBlockHeight);
+
+      if (normalizedMempoolData) {
+        return NextResponse.json(normalizedMempoolData, { status: 200 });
+      }
+    }
+
     // try another node
     const anotherNodeData = await getTransaction(NODE_SIDE_API_URL);
 

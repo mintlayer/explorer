@@ -3,7 +3,13 @@ import { useState } from "react";
 
 import { Transaction } from "@/app/(homepage)/_components/transaction";
 
-export function Transactions({ initialTransactions }: { initialTransactions: any[] }) {
+export function Transactions({
+  initialTransactions,
+  initialMempoolTransactions = [],
+}: {
+  initialTransactions: any[];
+  initialMempoolTransactions?: any[];
+}) {
   const [transactions, setTransactions] = useState<any[]>(initialTransactions);
   const [loading, setLoading] = useState<boolean>(false);
   const [offset, setOffset] = useState<number>(initialTransactions.length);
@@ -19,6 +25,7 @@ export function Transactions({ initialTransactions }: { initialTransactions: any
 
   return (
     <>
+      {initialMempoolTransactions?.map((value: any) => <Transaction key={`mempool-${value.transaction}`} {...value} />)}
       {transactions?.map((value: any, i: number) => <Transaction key={value.transaction} {...value} />)}
       <div className="flex justify-center mt-5">
         <button disabled={loading} className="border-2 px-2 py-2 font-bold" onClick={getBlocks}>
