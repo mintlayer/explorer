@@ -405,6 +405,22 @@ export async function getPoolStatsFromDb(poolId: string) {
   }, {} as Record<string, any>);
 }
 
+export async function getPoolStatsLastUpdatedAt(poolId: string) {
+  return runWithDb(async () => {
+    const { rows } = await postgres!.query(
+      `
+        SELECT MAX(updated_at) AS last_updated_at
+        FROM explorer_pool_daily_stats
+        WHERE pool_id = $1
+      `,
+      [poolId],
+    );
+
+    const value = rows[0]?.last_updated_at;
+    return value instanceof Date ? value.getTime() : null;
+  }, null);
+}
+
 export async function savePoolStatsToDb(poolId: string, stats: Record<string, any>) {
   return runWithDb(async () => {
     const entries = Object.entries(stats);

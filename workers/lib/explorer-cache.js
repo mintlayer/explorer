@@ -223,6 +223,20 @@ async function fetchPoolDelegations(poolId) {
   return fetchJson(`${NODE_API_URL}/pool/${poolId}/delegations`);
 }
 
+async function fetchPoolStats(poolId) {
+  const currentTime = Math.floor(Date.now() / 1000);
+  const entries = await Promise.all(
+    Array.from({ length: 30 }, async (_, index) => {
+      const dayEnd = currentTime - index * 86400;
+      const dayStart = dayEnd - 86400;
+      const data = await fetchJson(`${NODE_API_URL}/pool/${poolId}/block-stats?from=${dayStart}&to=${dayEnd}`);
+      return [new Date(dayStart * 1000).toISOString().split("T")[0], data];
+    }),
+  );
+
+  return Object.fromEntries(entries);
+}
+
 function enrichPool(pool, delegations) {
   const delegationsAmountAtoms = delegations.reduce((acc, delegation) => acc + BigInt(delegation.balance.atoms), BigInt(0));
   const delegationsAmount = delegations.reduce((acc, delegation) => acc + parseFloat(delegation.balance.decimal), 0);
@@ -272,6 +286,42 @@ async function storeSinglePool(pool) {
       [pool.poolId, delegation.delegation_id, JSON.stringify(delegation)],
     );
   }
+}
+
+async function storePoolStats(poolId, stats) {
+  const entries = Object.entries(stats);
+  if (!entries.length) {
+    return;
+  }
+
+  for (const [date, payload] of entries) {
+    await pg.query(
+      `
+        INSERT INTO explorer_pool_daily_stats (pool_id, stat_date, payload, updated_at)
+        VALUES ($1, $2::date, $3::jsonb, NOW())
+        ON CONFLICT (pool_id, stat_date)
+        DO UPDATE SET
+          payload = EXCLUDED.payload,
+          updated_at = NOW()
+      `,
+      [poolId, date, JSON.stringify(payload)],
+    );
+  }
+
+  await pg.query(
+    `
+      DELETE FROM explorer_pool_daily_stats
+      WHERE pool_id = $1
+        AND stat_date NOT IN (
+          SELECT stat_date
+          FROM explorer_pool_daily_stats
+          WHERE pool_id = $1
+          ORDER BY stat_date DESC
+          LIMIT 30
+        )
+    `,
+    [poolId],
+  );
 }
 
 async function pruneStalePools(syncedPoolIds) {
@@ -350,6 +400,14 @@ async function syncPoolsData() {
         await storeSinglePool(poolData);
         syncedPoolIds.push(pool.pool_id);
         logStep(`Persisted pool ${syncedPoolIds.length}: ${pool.pool_id}`);
+
+        try {
+          logStep(`Fetching 30-day stats for pool ${pool.pool_id}`);
+          await storePoolStats(pool.pool_id, await fetchPoolStats(pool.pool_id));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          logWarning(`Failed to sync stats for pool ${pool.pool_id}: ${message}`);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         logWarning(`Failed to sync pool ${pool.pool_id}: ${message}`);
