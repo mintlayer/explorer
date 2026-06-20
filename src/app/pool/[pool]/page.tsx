@@ -31,6 +31,8 @@ import { Stats } from "@/app/pool/[pool]/_components/stats";
 
 const coin = getCoin();
 
+export const dynamic = "force-dynamic";
+
 async function getData(pool: any) {
   const headersList = await headers();
   const authorization = headersList.get("Authorization");
@@ -59,9 +61,11 @@ async function getData(pool: any) {
 
 export async function generateMetadata({ params }: any): Promise<Metadata> {
   // read route params
-  const id = (await params).block;
+  const {
+    pool,
+  } = await params;
   return {
-    title: "Mintlayer Staking Pool | " + params.pool,
+    title: "Mintlayer Staking Pool | " + pool,
   };
 }
 

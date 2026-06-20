@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   if (process.env.BASIC_AUTH === undefined) {
     return NextResponse.next();
   }
