@@ -19,7 +19,7 @@ interface DailyStatEntry {
 
 export async function GET(request: Request, { params }: { params: Promise<{ pool: string }> }) {
   const pool = (await params).pool;
-  const cachedStats = {};
+  const cachedStats = await getPoolStatsFromDb(pool);
 
   try {
     if (Object.keys(cachedStats).length > 0) {

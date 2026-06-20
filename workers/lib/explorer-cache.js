@@ -38,20 +38,42 @@ async function closePg() {
   await pg.end();
 }
 
-async function fetchJson(url, init = {}) {
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
-  });
+const FETCH_RETRIES = 3;
+const FETCH_RETRY_DELAY_MS = 2000;
 
-  if (!response.ok) {
-    throw new Error(`Request failed ${response.status}: ${url}`);
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchJson(url, init = {}) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= FETCH_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        ...init,
+        headers: {
+          "Content-Type": "application/json",
+          ...(init.headers || {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed ${response.status}: ${url}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      lastError = error;
+      if (attempt < FETCH_RETRIES) {
+        const message = error instanceof Error ? error.message : String(error);
+        logWarning(`Request failed (attempt ${attempt}/${FETCH_RETRIES}), retrying in ${FETCH_RETRY_DELAY_MS * attempt}ms: ${message}`);
+        await sleep(FETCH_RETRY_DELAY_MS * attempt);
+      }
+    }
   }
 
-  return response.json();
+  throw lastError;
 }
 
 async function fetchTokenById(tokenId) {
@@ -226,45 +248,124 @@ function enrichPool(pool, delegations) {
   };
 }
 
-async function fetchPools() {
-  logStep("Fetching pool index...");
+async function storeSinglePool(pool) {
+  await pg.query(
+    `
+      INSERT INTO explorer_pools (pool_id, payload, updated_at)
+      VALUES ($1, $2::jsonb, NOW())
+      ON CONFLICT (pool_id)
+      DO UPDATE SET
+        payload = EXCLUDED.payload,
+        updated_at = NOW()
+    `,
+    [pool.poolId, JSON.stringify(pool.poolDetails)],
+  );
+
+  await pg.query("DELETE FROM explorer_pool_delegations WHERE pool_id = $1", [pool.poolId]);
+
+  for (const delegation of pool.delegations) {
+    await pg.query(
+      `
+        INSERT INTO explorer_pool_delegations (pool_id, delegation_id, payload, updated_at)
+        VALUES ($1, $2, $3::jsonb, NOW())
+      `,
+      [pool.poolId, delegation.delegation_id, JSON.stringify(delegation)],
+    );
+  }
+}
+
+async function pruneStalePools(syncedPoolIds) {
+  logStep(`Pruning stale pools not present in the latest snapshot (${syncedPoolIds.length} active pool ids)`);
+  await pg.query(
+    `
+      DELETE FROM explorer_pool_delegations
+      WHERE pool_id NOT IN (
+        SELECT UNNEST($1::text[])
+      )
+    `,
+    [syncedPoolIds],
+  );
+
+  await pg.query(
+    `
+      DELETE FROM explorer_pool_daily_stats
+      WHERE pool_id NOT IN (
+        SELECT UNNEST($1::text[])
+      )
+    `,
+    [syncedPoolIds],
+  );
+
+  await pg.query(
+    `
+      DELETE FROM explorer_pools
+      WHERE pool_id NOT IN (
+        SELECT UNNEST($1::text[])
+      )
+    `,
+    [syncedPoolIds],
+  );
+}
+
+async function syncPoolsData() {
+  logStep("Fetching and syncing pools...");
   const seenPools = new Set();
-  const pools = [];
+  const syncedPoolIds = [];
   let offset = 0;
+  let paginationComplete = false;
 
   while (true) {
     logStep(`Requesting pool page at offset ${offset}`);
-    const page = await fetchJson(`${NODE_API_URL}/pool?offset=${offset}`);
+    let page;
+
+    try {
+      page = await fetchJson(`${NODE_API_URL}/pool?offset=${offset}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logWarning(`Pool pagination stopped at offset ${offset} after retries: ${message}`);
+      break;
+    }
 
     if (!page.length) {
       logStep(`Pool pagination completed at offset ${offset}`);
+      paginationComplete = true;
       break;
     }
 
     for (const pool of page) {
-      if (!seenPools.has(pool.pool_id)) {
-        seenPools.add(pool.pool_id);
-        pools.push(pool);
+      if (seenPools.has(pool.pool_id)) {
+        continue;
+      }
+
+      seenPools.add(pool.pool_id);
+
+      try {
+        logStep(`Fetching delegations for pool ${syncedPoolIds.length + 1}: ${pool.pool_id}`);
+        const delegations = await fetchPoolDelegations(pool.pool_id);
+        const poolData = {
+          poolId: pool.pool_id,
+          poolDetails: enrichPool(pool, delegations),
+          delegations,
+        };
+        await storeSinglePool(poolData);
+        syncedPoolIds.push(pool.pool_id);
+        logStep(`Persisted pool ${syncedPoolIds.length}: ${pool.pool_id}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logWarning(`Failed to sync pool ${pool.pool_id}: ${message}`);
       }
     }
 
     offset += 10;
   }
 
-  logStep(`Collected ${pools.length} unique pools, fetching delegations...`);
-  const result = [];
-  for (let index = 0; index < pools.length; index += 1) {
-    const pool = pools[index];
-    logStep(`Fetching delegations for pool ${index + 1}/${pools.length}: ${pool.pool_id}`);
-    const delegations = await fetchPoolDelegations(pool.pool_id);
-    result.push({
-      poolId: pool.pool_id,
-      poolDetails: enrichPool(pool, delegations),
-      delegations,
-    });
+  if (paginationComplete && syncedPoolIds.length > 0) {
+    await pruneStalePools(syncedPoolIds);
+  } else if (!paginationComplete) {
+    logWarning(`Skipping stale pool prune because pagination did not complete (${syncedPoolIds.length} pools synced)`);
   }
 
-  return result;
+  logStep(`Pool sync finished (${syncedPoolIds.length} pools persisted)`);
 }
 
 async function fetchTokens() {
@@ -447,73 +548,6 @@ async function storeBlocks(blocks) {
   );
 }
 
-async function storePools(pools) {
-  logStep(`Persisting ${pools.length} pools and delegations...`);
-  const syncedPoolIds = [];
-
-  for (let index = 0; index < pools.length; index += 1) {
-    const pool = pools[index];
-    logStep(`Persisting pool ${index + 1}/${pools.length}: ${pool.poolId}`);
-    syncedPoolIds.push(pool.poolId);
-    await pg.query(
-      `
-        INSERT INTO explorer_pools (pool_id, payload, updated_at)
-        VALUES ($1, $2::jsonb, NOW())
-        ON CONFLICT (pool_id)
-        DO UPDATE SET
-          payload = EXCLUDED.payload,
-          updated_at = NOW()
-      `,
-      [pool.poolId, JSON.stringify(pool.poolDetails)],
-    );
-
-    await pg.query("DELETE FROM explorer_pool_delegations WHERE pool_id = $1", [pool.poolId]);
-
-    logStep(`Writing ${pool.delegations.length} delegations for pool ${pool.poolId}`);
-    for (const delegation of pool.delegations) {
-      await pg.query(
-        `
-          INSERT INTO explorer_pool_delegations (pool_id, delegation_id, payload, updated_at)
-          VALUES ($1, $2, $3::jsonb, NOW())
-        `,
-        [pool.poolId, delegation.delegation_id, JSON.stringify(delegation)],
-      );
-    }
-  }
-
-  if (syncedPoolIds.length > 0) {
-    logStep(`Pruning stale pools not present in the latest snapshot (${syncedPoolIds.length} active pool ids)`);
-    await pg.query(
-      `
-        DELETE FROM explorer_pool_delegations
-        WHERE pool_id NOT IN (
-          SELECT UNNEST($1::text[])
-        )
-      `,
-      [syncedPoolIds],
-    );
-
-    await pg.query(
-      `
-        DELETE FROM explorer_pool_daily_stats
-        WHERE pool_id NOT IN (
-          SELECT UNNEST($1::text[])
-        )
-      `,
-      [syncedPoolIds],
-    );
-
-    await pg.query(
-      `
-        DELETE FROM explorer_pools
-        WHERE pool_id NOT IN (
-          SELECT UNNEST($1::text[])
-        )
-      `,
-      [syncedPoolIds],
-    );
-  }
-}
 
 async function storeTokens(tokens) {
   logStep(`Persisting ${tokens.length} tokens...`);
@@ -572,14 +606,37 @@ async function syncCatalogData() {
   logStep("Preparing PostgreSQL schema...");
   await ensureSchema();
 
-  logStep("Syncing pools and delegations...");
-  await storePools(await fetchPools());
+  const errors = [];
 
-  logStep("Syncing tokens...");
-  await storeTokens(await fetchTokens());
+  try {
+    await syncPoolsData();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    errors.push(`pools: ${message}`);
+    logWarning(`Pool sync failed: ${message}`);
+  }
 
-  logStep("Syncing NFT index...");
-  await storeNfts(await fetchNfts());
+  try {
+    logStep("Syncing tokens...");
+    await storeTokens(await fetchTokens());
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    errors.push(`tokens: ${message}`);
+    logWarning(`Token sync failed: ${message}`);
+  }
+
+  try {
+    logStep("Syncing NFT index...");
+    await storeNfts(await fetchNfts());
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    errors.push(`nfts: ${message}`);
+    logWarning(`NFT sync failed: ${message}`);
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Catalog sync completed with errors: ${errors.join("; ")}`);
+  }
 
   logStep("Catalog sync finished");
 }
