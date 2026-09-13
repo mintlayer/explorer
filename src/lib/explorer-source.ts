@@ -5,6 +5,7 @@ import { getNetwork, getUrl, getUrlSide } from "@/utils/network";
 import { formatML } from "@/utils/numbers";
 import { parseDecodedTx } from "@/app/api/transaction/decode/utils";
 import { shortenString } from "@/utils/format";
+import { withCache } from "@/lib/server-cache";
 
 const NODE_API_URL = getUrl();
 const NODE_SIDE_API_URL = getUrlSide();
@@ -33,6 +34,10 @@ async function fetchJson(url: string, init?: RequestInit) {
   }
 
   return response.json();
+}
+
+function fetchJsonCached<T = any>(url: string, ttlMs: number, init?: RequestInit): Promise<T> {
+  return withCache(`get ${url}`, ttlMs, () => fetchJson(url, init));
 }
 
 function hexToUint8Array(hex: string): Uint8Array {
@@ -111,7 +116,16 @@ async function fetchNftById(tokenId: string) {
 }
 
 export async function fetchChainTip() {
-  return fetchJson(`${NODE_API_URL}/chain/tip`, { cache: "no-store" });
+  return fetchJsonCached(`${NODE_API_URL}/chain/tip`, Number(process.env.EXPLORER_CHAIN_TIP_CACHE_MS || 5000));
+}
+
+// Block payloads and block-id-by-height lookups never change once confirmed.
+// The shared in-memory cache de-duplicates concurrent renders that race the
+// Next.js data cache on a cold pod; the long TTL costs nothing correctness-wise.
+const IMMUTABLE_TTL_MS = Number(process.env.EXPLORER_IMMUTABLE_CACHE_MS || 3600000);
+
+function fetchImmutableJson(url: string) {
+  return fetchJsonCached(url, IMMUTABLE_TTL_MS, { cache: "force-cache" });
 }
 
 async function getBlocksRecursive(blockId: string, limit: number): Promise<any[]> {
@@ -119,14 +133,41 @@ async function getBlocksRecursive(blockId: string, limit: number): Promise<any[]
   let currentId: string | null = blockId;
 
   for (let index = 0; index < limit && currentId; index += 1) {
-    const data = await fetchJson(`${NODE_API_URL}/block/${currentId}`, {
-      cache: "force-cache",
-    });
+    const data = await fetchImmutableJson(`${NODE_API_URL}/block/${currentId}`);
     result.push(data);
     currentId = data?.header?.previous_block_id || null;
   }
 
   return result;
+}
+
+function mapRecentBlock(value: any, height: number) {
+  return {
+    id: value.id || value.block_id || value.header?.previous_block_id || `${height}`,
+    block: height,
+    datetime: value.header.timestamp.timestamp,
+    transactions: value.body.transactions.length,
+    pool: value.body.reward[0].pool_id,
+    pool_label: `${value.body.reward[0].pool_id.slice(0, 8)}...${value.body.reward[0].pool_id.slice(-8)}`,
+    target_difficulty: parseInt(value.header.consensus_data.target, 16) / (Math.pow(2, 256) - 1),
+  };
+}
+
+async function getBlocksByHeight(startHeight: number, tipBlockId: string, limit: number): Promise<any[]> {
+  const [blockResponses, previousIdResponses] = await Promise.all([
+    fetchImmutableJson(`${NODE_API_URL}/block/${tipBlockId}`),
+    Promise.all(
+      Array.from({ length: limit - 1 }, (_, index) =>
+        fetchImmutableJson(`${NODE_API_URL}/chain/${startHeight - 1 - index}`),
+      ),
+    ),
+  ]);
+
+  const blocks = await Promise.all(
+    previousIdResponses.map((blockId: string) => fetchImmutableJson(`${NODE_API_URL}/block/${blockId}`)),
+  );
+
+  return [blockResponses, ...blocks];
 }
 
 export async function fetchRecentBlocksFromApi(before?: number | null, limit = 10) {
@@ -139,27 +180,24 @@ export async function fetchRecentBlocksFromApi(before?: number | null, limit = 1
     blockId = chainTip.block_id;
   } else {
     height = before;
-    blockId = await fetchJson(`${NODE_API_URL}/chain/${before}`, {
-      cache: "force-cache",
-    });
+    blockId = await fetchImmutableJson(`${NODE_API_URL}/chain/${before}`);
   }
 
-  const blocks = await getBlocksRecursive(blockId, limit);
+  let blocks: any[];
+  try {
+    blocks = await getBlocksByHeight(height, blockId, limit);
+  } catch (_error) {
+    // Older API versions without /chain/{height} support: fall back to the
+    // sequential previous-block walk.
+    blocks = await getBlocksRecursive(blockId, limit);
+  }
 
-  return blocks.map((value: any, index: number) => ({
-    id: value.id || value.block_id || value.header?.previous_block_id || `${height - index}`,
-    block: height - index,
-    datetime: value.header.timestamp.timestamp,
-    transactions: value.body.transactions.length,
-    pool: value.body.reward[0].pool_id,
-    pool_label: `${value.body.reward[0].pool_id.slice(0, 8)}...${value.body.reward[0].pool_id.slice(-8)}`,
-    target_difficulty: parseInt(value.header.consensus_data.target, 16) / (Math.pow(2, 256) - 1),
-  }));
+  return blocks.map((value: any, index: number) => mapRecentBlock(value, height - index));
 }
 
 export async function fetchRecentTransactionsFromApi(offset = 0) {
   const chainTip = await fetchChainTip();
-  const transactions = await fetchJson(`${NODE_API_URL}/transaction?offset=${offset}`);
+  const transactions = await fetchJsonCached(`${NODE_API_URL}/transaction?offset=${offset}`, Number(process.env.EXPLORER_RECENT_TX_CACHE_MS || 10000));
 
   return transactions.map((transaction: any) => {
     const amount = transaction.outputs.reduce((acc: bigint, value: any) => {
@@ -277,7 +315,7 @@ export function enrichPool(pool: any, delegations: any[]) {
 
 async function fetchDelegationsForPools(poolIds: string[]) {
   const result: Record<string, any[]> = {};
-  const batchSize = 10;
+  const batchSize = Number(process.env.EXPLORER_POOL_DELEGATIONS_BATCH || 15);
 
   for (let index = 0; index < poolIds.length; index += batchSize) {
     const batch = poolIds.slice(index, index + batchSize);
@@ -291,28 +329,84 @@ async function fetchDelegationsForPools(poolIds: string[]) {
   return result;
 }
 
+// The upstream /pool endpoint caps `items` at 100 and returns a malformed
+// single-item response for anything larger.
+const POOL_PAGE_SIZE = 100;
+const POOL_PARALLEL_PAGES = 3;
+const POOL_PAGE_RETRIES = 3;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchPoolPage(pageOffset: number) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= POOL_PAGE_RETRIES; attempt += 1) {
+    try {
+      return await fetchJson(`${NODE_API_URL}/pool?offset=${pageOffset}&items=${POOL_PAGE_SIZE}`, {
+        cache: "no-store",
+      });
+    } catch (error) {
+      lastError = error;
+      if (attempt < POOL_PAGE_RETRIES) {
+        await sleep(1000 * attempt);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 export async function fetchAllPoolsFromApi() {
-  let offset = 0;
   const seen = new Set<string>();
   const pools: any[] = [];
 
-  while (true) {
-    const page = await fetchJson(`${NODE_API_URL}/pool?offset=${offset}`, {
-      cache: "no-store",
-    });
-
-    if (!page.length) {
-      break;
-    }
-
+  const ingestPage = (page: any[]) => {
     for (const pool of page) {
       if (!seen.has(pool.pool_id)) {
         seen.add(pool.pool_id);
         pools.push(pool);
       }
     }
+  };
 
-    offset += 10;
+  let offset = 0;
+  let exhausted = false;
+
+  while (!exhausted) {
+    // First page of each round sequentially, then the following pages of the
+    // round in parallel. Pagination ends at the first short (or empty) page.
+    const firstPage = await fetchPoolPage(offset);
+
+    if (!Array.isArray(firstPage) || firstPage.length === 0) {
+      break;
+    }
+
+    ingestPage(firstPage);
+
+    if (firstPage.length < POOL_PAGE_SIZE) {
+      break;
+    }
+
+    const nextOffsets = Array.from({ length: POOL_PARALLEL_PAGES - 1 }, (_, index) => offset + (index + 1) * POOL_PAGE_SIZE);
+    const pages = await Promise.all(nextOffsets.map((pageOffset) => fetchPoolPage(pageOffset)));
+
+    for (const page of pages) {
+      if (!Array.isArray(page) || page.length === 0) {
+        exhausted = true;
+        break;
+      }
+
+      ingestPage(page);
+
+      if (page.length < POOL_PAGE_SIZE) {
+        exhausted = true;
+        break;
+      }
+    }
+
+    offset += POOL_PARALLEL_PAGES * POOL_PAGE_SIZE;
   }
 
   const delegations = await fetchDelegationsForPools(pools.map((pool: any) => pool.pool_id));
