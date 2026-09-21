@@ -21,7 +21,7 @@ function getTransactionType(tx: any): { type: string; label: string; color: stri
 
   // Check for order-related operations
   for (const input of inputs) {
-    if (input.input?.input_type === 'AccountCommand') {
+    if (input.input?.input_type === 'OrderAccountCommand') {
       const command = input.input.command;
       if (command === 'FillOrder') {
         return { type: 'swap', label: 'Swap', color: 'bg-purple-100 text-purple-800' };
