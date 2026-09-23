@@ -54,6 +54,7 @@ SERVER_URL=http://localhost:3000
 ```env
 # Override default API URL (optional)
 NODE_API_URL=
+MARKET_DATA_API_URL=http://localhost:3000
 
 # CoinMarketCap API key for price data (optional)
 CMC_API_KEY=your_cmc_api_key_here

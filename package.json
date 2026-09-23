@@ -24,6 +24,7 @@
     "dotenv": "^16.4.7",
     "eslint": "9.36.0",
     "eslint-config-next": "^16.0.3",
+    "lightweight-charts": "^5.2.1",
     "next": "^16.2.3",
     "next-qrcode": "^2.5.1",
     "next-runtime-env": "^2.0.1",
