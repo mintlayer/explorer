@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const DEFAULT_MARKET_DATA_API_URL = "http://localhost:3000";
+const DEFAULT_MARKET_DATA_API_URL = "https://market-data-api.mintlayer.org";
 
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
