@@ -16,6 +16,7 @@ import {Metadata} from "@/app/nft/[nft]/_components/metadata";
 import {formatML} from "@/utils/numbers";
 import {TransactionsList} from "@/app/address/[address]/_components/transactions-list";
 import {TokenIcon} from "@/app/tokens/_components/TokenIcon";
+import { OrderBook } from "./_components/order_book";
 
 async function getData(token: any) {
   const headersList = await headers();
@@ -105,6 +106,7 @@ export default async function Token({ params }: { params: { token: string } }) {
 
           <div className="grid md:grid-cols-12 gap-4 mb-8">
             <div className="md:col-span-8">
+              <OrderBook tokenId={token} tokenDecimals={data.number_of_decimals} ticker={data.token_ticker.string} />
               <TokenTransactionsList token_id={token} />
             </div>
 
