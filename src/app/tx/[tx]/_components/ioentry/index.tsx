@@ -61,6 +61,11 @@ export const IOEntry = ({ data, expand, type, metadata, index, highlight }: any)
         link = `/delegation/${label}`;
       }
 
+      if (data?.input?.input_type === "OrderAccountCommand") {
+        label = `${data.input.order_id || ""}`;
+        link = data.input.order_id ? `/order/${data.input.order_id}` : "";
+      }
+
       if (data?.input?.Utxo?.id?.BlockReward) {
         amount = "";
         label = "Stake reward";
@@ -72,6 +77,11 @@ export const IOEntry = ({ data, expand, type, metadata, index, highlight }: any)
   if (type === "output") {
     if (data?.value?.type === "TokenV1") {
       coin = getTokenTicker(metadata, data.value.token_id);
+    }
+
+    if (data.type === "CreateOrder") {
+      label = "Create Order";
+      link = "";
     }
 
     if (data.type === "Transfer") {

@@ -30,6 +30,23 @@ import { Icon } from "@/app/_components/heading_box/icon";
 
 const coin = getCoin();
 
+function collectTokenIds(transactions: any[] = []) {
+  const tokenIds = new Set<string>();
+
+  const visit = (value: any) => {
+    if (!value || typeof value !== "object") return;
+
+    if (typeof value.token_id === "string") {
+      tokenIds.add(value.token_id);
+    }
+
+    Object.values(value).forEach(visit);
+  };
+
+  transactions.forEach(visit);
+  return Array.from(tokenIds);
+}
+
 async function getData(block: string, transactionsPage: string, transactionsPerPage: string) {
   const headersList = await headers();
   const authorization = headersList.get("Authorization");
@@ -48,6 +65,25 @@ async function getData(block: string, transactionsPage: string, transactionsPerP
 
   const data = await res.json();
 
+  // Block responses contain token IDs but not their metadata. Fetch it here so
+  // the compact input/output cards can render the same ticker as /tx/[tx].
+  const tokenIds = collectTokenIds(data?.transactions);
+  const tokenEntries = await Promise.all(
+    tokenIds.map(async (tokenId) => {
+      const tokenResponse = await fetch(process.env.SERVER_URL + "/api/token/" + tokenId, {
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authorization && { Authorization: authorization }),
+        },
+      });
+
+      if (!tokenResponse.ok) return null;
+      return [tokenId, await tokenResponse.json()] as const;
+    }),
+  );
+  const tokens = Object.fromEntries(tokenEntries.filter((entry): entry is readonly [string, any] => entry !== null));
+
   const resLast = await fetch(process.env.SERVER_URL + "/api/block/tip", {
     cache: "no-store",
     headers: {
@@ -56,7 +92,7 @@ async function getData(block: string, transactionsPage: string, transactionsPerP
     },
   });
   const last = await resLast.json();
-  return { data, last: last.block_height };
+  return { data, last: last.block_height, tokens };
 }
 
 export async function generateMetadata({ params }: any): Promise<Metadata> {
@@ -76,7 +112,7 @@ export default async function Block({
 }) {
   const { transactionsPage = "1", transactionsPerPage = "10" } = searchParams;
   const block = (await params).block;
-  const { data, last, error }: any = await getData(block, transactionsPage, transactionsPerPage);
+  const { data, last, error, tokens }: any = await getData(block, transactionsPage, transactionsPerPage);
 
   if (error === "Invalid block Id") {
     return <NotFound title={"Invalid block Id"} subtitle={"Invalid block Id"} />;
@@ -209,6 +245,7 @@ export default async function Block({
             }
             key={"tx" + i}
             data={value}
+            tokens={tokens}
           />
         );
       })}
