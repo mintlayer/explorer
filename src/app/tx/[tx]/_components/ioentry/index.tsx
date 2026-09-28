@@ -32,6 +32,11 @@ const getTooltipContent = (item: string) => {
   return item;
 };
 
+const getTokenTicker = (metadata: any, tokenId: string | undefined) => {
+  const ticker = metadata?.tokens?.[tokenId ?? ""]?.token_ticker?.string;
+  return typeof ticker === "string" ? ticker : "";
+};
+
 export const IOEntry = ({ data, expand, type, metadata, index, highlight }: any) => {
   let amount;
   let label = "";
@@ -40,11 +45,7 @@ export const IOEntry = ({ data, expand, type, metadata, index, highlight }: any)
 
   if (type === "input") {
     if (data?.utxo?.value?.type === "TokenV1") {
-      if (metadata?.tokens && metadata?.tokens[data?.utxo?.value?.token_id]) {
-        coin = metadata.tokens[data?.utxo?.value?.token_id].token_ticker.string;
-      } else {
-        coin = "";
-      }
+      coin = getTokenTicker(metadata, data.utxo.value.token_id);
     }
 
     if (data?.input) {
@@ -70,11 +71,7 @@ export const IOEntry = ({ data, expand, type, metadata, index, highlight }: any)
 
   if (type === "output") {
     if (data?.value?.type === "TokenV1") {
-      if (metadata?.tokens && metadata?.tokens[data.value.token_id]) {
-        coin = metadata.tokens[data?.value?.token_id].token_ticker.string;
-      } else {
-        coin = "";
-      }
+      coin = getTokenTicker(metadata, data.value.token_id);
     }
 
     if (data.type === "Transfer") {

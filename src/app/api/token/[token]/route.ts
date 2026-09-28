@@ -14,6 +14,22 @@ const ipfsToHttps = (url: string) => {
   return `https://${cleanUrl[0]}.ipfs.w3s.link${cleanUrl[1]?'/'+cleanUrl[1]:''}`;
 }
 
+const getMetadataUri = (data: unknown): string | null => {
+  if (
+    !data ||
+    typeof data !== "object" ||
+    !("metadata_uri" in data) ||
+    !data.metadata_uri ||
+    typeof data.metadata_uri !== "object" ||
+    !("string" in data.metadata_uri) ||
+    typeof data.metadata_uri.string !== "string"
+  ) {
+    return null;
+  }
+
+  return data.metadata_uri.string;
+};
+
 
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const token = (await params).token;
@@ -49,19 +65,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   });
   const data_stats = await res_stats.json();
 
-  const metadataUrl = ipfsToHttps(data.metadata_uri.string);
-  const metadataRes = await fetch(metadataUrl).catch(() => {
-    data.metadata_invalid = true;
-    return null;
-  });
-  const metadata = metadataRes && await metadataRes.json().catch(() => {
-    data.metadata_invalid = true;
-    return null;
-  });
-  data.metadata = metadata;
+  const metadataUri = getMetadataUri(data);
 
-  if(data.metadata?.tokenIcon){
-    data.tokenIcon = ipfsToHttps(data.metadata.tokenIcon);
+  if (metadataUri) {
+    const metadataUrl = ipfsToHttps(metadataUri);
+    const metadataRes = await fetch(metadataUrl).catch(() => {
+      data.metadata_invalid = true;
+      return null;
+    });
+    const metadata = metadataRes && await metadataRes.json().catch(() => {
+      data.metadata_invalid = true;
+      return null;
+    });
+    data.metadata = metadata;
+
+    if (typeof data.metadata?.tokenIcon === "string") {
+      data.tokenIcon = ipfsToHttps(data.metadata.tokenIcon);
+    }
   }
 
   let response: any = {};
