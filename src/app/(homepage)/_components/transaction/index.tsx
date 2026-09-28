@@ -55,7 +55,9 @@ export const Transaction = ({ transaction, amount, fee, block, pendingBlock, isP
       <div className="flex flex-row items-center text-xs">
         <Image className="w-4 h-4 mr-2" src={i_transactions} alt="" data-tooltip-id="tooltip" data-tooltip-content="Transaction ID" />{" "}
         {isPending ? (
-          <span className="font-bold text-base text-primary-110">{label}</span>
+            <Link className="font-bold text-base text-primary-110" href={`/tx/${transaction}`}>
+              {label}
+            </Link>
         ) : (
           <Link className="font-bold text-base text-primary-110" href={`/tx/${transaction}`}>
             {label}
@@ -66,7 +68,9 @@ export const Transaction = ({ transaction, amount, fee, block, pendingBlock, isP
       <div className="flex flex-row items-center text-xs">
         <Image className="w-4 h-4 mr-2" src={i_block} alt="" data-tooltip-id="tooltip" data-tooltip-content="Block height" />{" "}
         {isPending ? (
-          <span className="font-bold text-base text-primary-110">~#{pendingBlock}</span>
+          <Link className="font-bold text-base text-primary-110" href={`/block/${pendingBlock}`}>
+            ~#{pendingBlock}
+          </Link>
         ) : (
           <Link className="font-bold text-base text-primary-110" href={`/block/${block}`}>
             #{block}
